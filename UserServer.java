@@ -1,4 +1,6 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -16,6 +18,16 @@ public class UserServer {
 	
 	public UserServer() {
 		try {
+			/* To get input from console */
+			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+			String command = null;
+			
+			/* To determine timeout for input from console */
+			long startTime = -1;
+			
+			/* Timeout to stop listening for console input or socket activity */
+			Integer timeOut = 5000;
+			
 			/* Create a selector to check activity on port */
 			Selector selector = Selector.open();
 			
@@ -30,13 +42,48 @@ public class UserServer {
 	        
 	        /* Return code maps to a closed connection or data received from socket connection */
 	        Integer rc = -1;
-	 
+	        
+	        /* Start server */
 	        while (true) {
-	        	/* Initial output to indicate all activity on the socket has been handled */
+	        	/* Prompt to indicate all incoming messages have been handled and waiting for input from console */
+	        	System.out.println("Waiting for incoming command from console");
+	        	
+	        	/* Wait for User to input command into console. Timeout if no response was provided in time */
+	        	startTime = System.currentTimeMillis();
+	        	while ((System.currentTimeMillis() - startTime) < timeOut && !in.ready()) {}
+	        	if (in.ready()) {
+	        		command = in.readLine();
+	        		System.out.println("Entered: " + command);
+	        		switch(command) {
+	        			case "Tweet": 
+	        				System.out.println("Tweet was selected");
+	        				break;
+	        			case "Block":
+	        				System.out.println("Block was selected");
+	        				break;
+	        			case "Unblock":
+	        				System.out.println("Unblock was seclted");
+	        				break;
+	        			case "View":
+	        				System.out.println("View was selected");
+	        				break;
+	        			case "Help":
+	        				System.out.println("Tweet: Input a message for User's to see whom you did not block.");
+	        				System.out.println("Block: By inputting a username, the subsequent User will be blocked from viewing your tweets");
+	        				System.out.println("Unblock: By inputting a username, the subsequent User will be unblocked from viewing your tweets.");
+	        				System.out.println("View: View Tweets posted by yourself or by User's you are following and are not blocked from.");
+	        				break;
+	        			default:
+	        				System.out.println("Only valid commands include: {Tweet, Block, Unblock, View, Help}");
+	        				break;
+	        		}
+	        	}
+	        	
+	        	/* Prompt to indicate all commands from console has been handled and waiting for activity on socket */
 	        	System.out.println("Waiting for incoming messages");
 	            
-	        	/* Block on socket until activity occurs */
-	        	selector.select();
+	        	/* Block on socket for five seconds to check for activity */
+	        	selector.select(timeOut);
 	        	
 	        	/* Container for activity on listener socket */
 	            Set<SelectionKey> selectedKeys = selector.selectedKeys();
