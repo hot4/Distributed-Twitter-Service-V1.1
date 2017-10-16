@@ -1,4 +1,7 @@
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -7,19 +10,92 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class UserServer {
 	
 	public static void main(String[] args) {
-		new UserServer();
+		if(args.length != 2) {
+	        System.out.println("FAILURE: Improper amount of arguments used");
+	        System.exit(1);
+	        return;
+	    }
+		
+		new UserServer(args[0], args[1]);
 	}
 	
-	public UserServer() {
+	public UserServer(String fileName, String userName) {		
+		/* Determine current director to read file from */
+		File testFile = new File("");
+	    String currentPath = testFile.getAbsolutePath();
+		
+		/* Variables to read through *.csv file */
+		BufferedReader in = null;
+		String line = null;
+		List<String[]> allUsers = new ArrayList<String[]>(); 
+		String[] userInfo = null;
+		
+		User user = null;
+		
 		try {
+			/* Read file from src folder */
+			in = new BufferedReader(new FileReader(currentPath + "\\src\\" + fileName));
+			/* Parse file to get User information */
+			while ((line = in.readLine()) != null) {
+				/* Remove white spaces and split based on comma separator */
+				userInfo = line.replace(" ", "").substring(1, line.length()-2).split(",");
+				
+				/* Gather all information from file */
+				if (userInfo[0].equals(userName)) {
+					/* Create User object based on command argument */
+					user = new User(userInfo[0], Integer.parseInt(userInfo[1]));
+				} else {
+					/* Store all user informations */
+					allUsers.add(userInfo);
+				}
+			}
+		} catch (FileNotFoundException e) {
+			/* ERROR: Could not open file */
+			System.err.println("ERROR: No file to open " + e.getMessage());
+			e.printStackTrace();
+			System.exit(1);
+		} catch (IOException e) {
+			/* ERROR: Could not parse file */
+			System.err.println("ERROR: Improper file format " + e.getMessage());
+			e.printStackTrace();
+			System.exit(1);
+		} finally {
+			if (in != null) {
+				try {
+					/* Close BufferedReader */
+					in.close();
+				} catch (IOException e) {
+					/* ERROR: BufferedReader could not be closed */
+					System.err.println("ERROR: Could not close BufferedReader " + e.getMessage());
+					e.printStackTrace();
+					System.exit(1);
+				}	
+			}
+		}
+		
+		if (user == null) { 
+			System.out.println("Username passed in through Run Configuration does not match username in CSV file");
+			System.exit(1);
+		}
+		
+		/* Follow all users */
+		for (int i = 0; i < allUsers.size(); i++) {
+			/* Pass userName and portNumber information of all Users from file */
+			user.follow(allUsers.get(i)[0], Integer.parseInt(allUsers.get(1)[1]), allUsers.size() + 1);
+		}
+		
+		
+		try {	
 			/* To get input from console */
-			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+			in = new BufferedReader(new InputStreamReader(System.in));
 			String command = null;
 			
 			/* To determine timeout for input from console */
@@ -33,7 +109,7 @@ public class UserServer {
 			
 			/* Create a listen socket on the given port */
 	        ServerSocketChannel serverSocket = ServerSocketChannel.open();
-	        serverSocket.bind(new InetSocketAddress("localhost", 12345));
+	        serverSocket.bind(new InetSocketAddress("localhost", user.getPortNumber()));
 	        serverSocket.configureBlocking(false);
 	        serverSocket.register(selector, SelectionKey.OP_ACCEPT);
 	        
@@ -121,7 +197,10 @@ public class UserServer {
 	            }
 	        }
 		} catch (IOException e) {
+			/* ERROR: System error */
+			System.err.println("ERROR: System error " + e.getMessage());
 			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 }
