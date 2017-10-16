@@ -89,7 +89,7 @@ public class UserServer {
 		/* Follow all users */
 		for (int i = 0; i < allUsers.size(); i++) {
 			/* Pass userName and portNumber information of all Users from file */
-			user.follow(allUsers.get(i)[0], Integer.parseInt(allUsers.get(1)[1]), allUsers.size() + 1);
+			user.follow(allUsers.get(i)[0], Integer.parseInt(allUsers.get(i)[1]), allUsers.size() + 1);
 		}
 		
 		

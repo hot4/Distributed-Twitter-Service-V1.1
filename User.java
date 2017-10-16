@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 public class User {
 	/* Identifier for this User */
@@ -13,6 +14,27 @@ public class User {
 	private Map<String, Integer> portsToSendMsg;
 	/* Index associated with this and other Users for matrix */
 	private Integer userIndex;
+	/* Container for all Tweets sent in the simulation */
+	private PriorityQueue<Tweet> tweets;
+	
+	/**
+	 * @param userName: Identifier for this User
+	 * @param portNumber: Socket port number for this User to listen on
+	 * @effects Assigns parameters to private field
+	 * @modifies userName, portNumber, matrixTi, portsToSendMsg, and tweets private fields
+	 * @returns A new User object
+	 * */
+	public User(String userName, Integer portNumber) {
+		this.userName = userName;
+		this.portNumber = portNumber;
+		this.matrixTi = new HashMap<Pair<String, Integer>, ArrayList<Integer>>();
+		this.portsToSendMsg = new HashMap<String, Integer>();
+		this.userIndex = 0;
+		this.tweets = new PriorityQueue<Tweet>();
+		
+		/* Have this User be first row in matrix */
+		this.matrixTi.put(makePair(userName), new ArrayList<Integer>());
+	}
 	
 	/**
 	 * @param userName: Identifier for some User
@@ -26,41 +48,28 @@ public class User {
 	}
 	
 	/**
-	 * @param userName: Identifier for this User
-	 * @param portNumber: Socket port number for this User to listen on
-	 * @effects Assigns parameter to private field
-	 * @modifies userName, portNumber, matrixTi, and portsToSendMsg private fields
-	 * */
-	public User(String userName, Integer portNumber) {
-		this.userName = userName;
-		this.portNumber = portNumber;
-		this.matrixTi = new HashMap<Pair<String, Integer>, ArrayList<Integer>>();
-		this.portsToSendMsg = new HashMap<String, Integer>();
-		this.userIndex = 0;
-		
-		/* Have this User be first row in matrix */
-		this.matrixTi.put(makePair(userName), new ArrayList<Integer>());
-	}
-	
-	/**
-	 * @returns Private field userName
+	 * @returns A copy of userName private field
 	 * */
 	public String getUserName() { 
-		return userName; 
+		return new String(userName); 
 	}
 	
 	/**
-	 * @returns Private field portNumber
+	 * @returns A copy of portNumber private field
 	 * */
 	public Integer getPortNumber() {
-		return portNumber;
+		return new Integer(portNumber);
 	}
 	
 	/**
-	 * @returns Private field matrixTi
+	 * @returns A copy of matrixT private field
 	 * */
 	public Map<Pair<String, Integer>, ArrayList<Integer>> getMatrixTi() { 
-		return matrixTi;
+		Map<Pair<String, Integer>, ArrayList<Integer>> copy = new HashMap<Pair<String, Integer>, ArrayList<Integer>>();
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Integer>> entry : this.matrixTi.entrySet()) {
+			copy.put(entry.getKey(), entry.getValue());
+		}
+		return copy;
 	}
 	
 	/**
