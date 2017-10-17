@@ -173,7 +173,7 @@ public class UserServer {
 	        				System.out.println("Unblock was seclted");
 	        				break;
 	        			case "View":
-	        				System.out.println("View was selected");
+	        				user.printTweets();
 	        				break;
 	        			case "Help":
 	        				System.out.println("Tweet: Input a message for User's to see whom you did not block.");

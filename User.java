@@ -127,6 +127,18 @@ public class User {
 	}
 	
 	/**
+	 * @effects Prints all tweets this User has either created or received
+	 * */
+	public void printTweets() {
+		for (Tweet tweet : this.tweets) {
+			System.out.println("\tUsername: " + tweet.getUserName());
+			System.out.println("\tTime: " + tweet.getdtUTC());
+			System.out.println("\tMessage: " + tweet.getMessage());
+			System.out.println("");
+		}
+	}
+	
+	/**
 	 * @param eR: Event that has occurred
 	 * @param recipient: User to check if User received eR
 	 * @effects Checks if indirect knowledge of recipient knows about eR
@@ -161,6 +173,11 @@ public class User {
 	/**
 	 * @param type: Categorized to be one the following values {block, unblock, tweet}
 	 * @param message: Description of Event
+	 * @effects Increments local event counter 
+	 * @effects Increments Ti(i,i)
+	 * @effects Adds eR to PL
+	 * @effects Creates a unique container of Event objects that each User needs to know about
+	 * @returns A partial log of events that each User needs to be sent
 	 * */
 	public Map<String, PriorityQueue<Event>> onEvent(Integer type, String message) {
 		/* Capture current time the Event was triggered in UTC */
