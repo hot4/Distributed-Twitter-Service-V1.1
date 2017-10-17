@@ -11,8 +11,11 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 public class UserServer {
@@ -97,6 +100,10 @@ public class UserServer {
 			/* To get input from console */
 			in = new BufferedReader(new InputStreamReader(System.in));
 			String command = null;
+			String message = null;
+			SocketChannel sendSC = null;
+			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			Map<String, PriorityQueue<Event>> NP = new HashMap<String, PriorityQueue<Event>>();
 			
 			/* To determine timeout for input from console */
 			long startTime = -1;
@@ -113,16 +120,12 @@ public class UserServer {
 	        serverSocket.configureBlocking(false);
 	        serverSocket.register(selector, SelectionKey.OP_ACCEPT);
 	        
-	        /* Stores incoming information sent from socket(s) */
-	        ByteBuffer buffer = ByteBuffer.allocate(256);
-	        
 	        /* Return code maps to a closed connection or data received from socket connection */
 	        Integer rc = -1;
 	        
 	        /* Start server */
 	        while (true) {
-	        	/* Prompt to indicate all incoming messages have been handled and waiting for input from console */
-	        	System.out.println("Waiting for incoming command from console");
+	        	/* All incoming messages have been handled and waiting for input from console */
 	        	
 	        	/* Wait for User to input command into console. Timeout if no response was provided in time */
 	        	startTime = System.currentTimeMillis();
@@ -132,7 +135,16 @@ public class UserServer {
 	        		System.out.println("Entered: " + command);
 	        		switch(command) {
 	        			case "Tweet": 
-	        				System.out.println("Tweet was selected");
+	        				System.out.print("Input Message: ");
+	        				message = in.readLine();
+	        				NP = user.onEvent(Event.TWEET, message);
+	        				for (Integer port : user.getPortsToSendMsg().values()) {
+	        					sendSC = SocketChannel.open(new InetSocketAddress("localhost", port));
+	        					buffer = ByteBuffer.wrap(message.getBytes());
+	        					sendSC.write(buffer);
+	        					buffer.clear();
+	        					sendSC.close();
+	        				}
 	        				break;
 	        			case "Block":
 	        				System.out.println("Block was selected");
@@ -155,8 +167,7 @@ public class UserServer {
 	        		}
 	        	}
 	        	
-	        	/* Prompt to indicate all commands from console has been handled and waiting for activity on socket */
-	        	System.out.println("Waiting for incoming messages");
+	        	/* All commands from console has been handled and waiting for activity on socket */
 	            
 	        	/* Block on socket for five seconds to check for activity */
 	        	selector.select(timeOut);

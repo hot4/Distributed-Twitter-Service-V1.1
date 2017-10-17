@@ -1,7 +1,7 @@
 public class Pair<K, V> {
 
     private final K key;
-    private final V value;
+    private V value;
 
     /**
      * @param key: The type of key maintained by this pair
@@ -36,5 +36,13 @@ public class Pair<K, V> {
     public V getValue() {
         return value;
     }
-
+    
+    /**
+     * @param value: new value to be associated with key
+     * @effects Assigns parameter to private field
+     * @modifies Private field value
+     * */
+    public void setValue(V value) { 
+    	this.value = value;
+    }
 }

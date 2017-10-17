@@ -40,6 +40,7 @@ public class User {
 		this.portsToSendMsg = new HashMap<String, Integer>();
 		this.userIndex = 0;
 		this.tweets = new PriorityQueue<Tweet>();
+		this.PL = new PriorityQueue<Event>();
 		
 		/* Have this User be first row in matrix */
 		this.matrixTi.put(makePair(userName), new ArrayList<Pair<String, Integer>>());
@@ -177,9 +178,7 @@ public class User {
 					/* Check if current direct knowledge index is this User */
 					if (value.getKey().equals(this.getUserName())){
 						/* Increment Ti(i,i) */
-						entry.getValue().add(Pair.createPair(this.getUserName(), value.getValue()+1));
-						/* Remove old direct knowledge index */
-						entry.getValue().remove(value);
+						value.setValue(value.getValue()+1);
 						break;	
 					}
 				}
