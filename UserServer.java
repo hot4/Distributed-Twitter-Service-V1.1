@@ -11,8 +11,11 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 public class UserServer {
@@ -89,7 +92,7 @@ public class UserServer {
 		/* Follow all users */
 		for (int i = 0; i < allUsers.size(); i++) {
 			/* Pass userName and portNumber information of all Users from file */
-			user.follow(allUsers.get(i)[0], Integer.parseInt(allUsers.get(1)[1]), allUsers.size() + 1);
+			user.follow(allUsers.get(i)[0], Integer.parseInt(allUsers.get(i)[1]), allUsers.size() + 1);
 		}
 		
 		
@@ -97,6 +100,10 @@ public class UserServer {
 			/* To get input from console */
 			in = new BufferedReader(new InputStreamReader(System.in));
 			String command = null;
+			String message = null;
+			SocketChannel sendSC = null;
+			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			Map<String, PriorityQueue<Event>> NP = new HashMap<String, PriorityQueue<Event>>();
 			
 			/* To determine timeout for input from console */
 			long startTime = -1;
@@ -113,16 +120,12 @@ public class UserServer {
 	        serverSocket.configureBlocking(false);
 	        serverSocket.register(selector, SelectionKey.OP_ACCEPT);
 	        
-	        /* Stores incoming information sent from socket(s) */
-	        ByteBuffer buffer = ByteBuffer.allocate(256);
-	        
 	        /* Return code maps to a closed connection or data received from socket connection */
 	        Integer rc = -1;
 	        
 	        /* Start server */
 	        while (true) {
-	        	/* Prompt to indicate all incoming messages have been handled and waiting for input from console */
-	        	System.out.println("Waiting for incoming command from console");
+	        	/* All incoming messages have been handled and waiting for input from console */
 	        	
 	        	/* Wait for User to input command into console. Timeout if no response was provided in time */
 	        	startTime = System.currentTimeMillis();
@@ -132,7 +135,36 @@ public class UserServer {
 	        		System.out.println("Entered: " + command);
 	        		switch(command) {
 	        			case "Tweet": 
-	        				System.out.println("Tweet was selected");
+	        				System.out.print("Input Message: ");
+	        				message = in.readLine();
+	        				
+	        				/* Send all Events that some other User needs to know about given unblocked */
+	        				NP = user.onEvent(Event.TWEET, message);
+	        				
+	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
+	        				for (Map.Entry<String, PriorityQueue<Event>> NPEntry : NP.entrySet()) {
+	        					/* Iterate through known ports until current User is found */
+	        					for (Map.Entry<String, Integer> portEntry : user.getPortsToSendMsg().entrySet()) {
+	        						/* Check if given portEntry has the same username as the given NPEntry username */
+	        						if (NPEntry.getKey().equals(portEntry.getKey())) {
+	        							/* Open socket to current User */
+	        							sendSC = SocketChannel.open(new InetSocketAddress("localhost", portEntry.getValue()));
+	        							/* Iterate through all Events the current User needs to be sent */
+	        							Iterator<Event> itrEvent = NPEntry.getValue().iterator();
+	        							while (itrEvent.hasNext()) {
+	        								/* Write event to socket */
+	        								buffer = ByteBuffer.wrap(itrEvent.next().toString().getBytes());
+	        								sendSC.write(buffer);
+	        								/* Clear buffer after Event has been sent */
+	        								buffer.clear();
+	        							}
+	        							/* Close socket since all Event(s) have been sent to given port */
+	        							sendSC.close();
+	        							/* Since current NPEntry has been satisfied and next entry requires a different port */
+	        							break;
+	        						}
+	        					}
+	        				}
 	        				break;
 	        			case "Block":
 	        				System.out.println("Block was selected");
@@ -155,8 +187,7 @@ public class UserServer {
 	        		}
 	        	}
 	        	
-	        	/* Prompt to indicate all commands from console has been handled and waiting for activity on socket */
-	        	System.out.println("Waiting for incoming messages");
+	        	/* All commands from console has been handled and waiting for activity on socket */
 	            
 	        	/* Block on socket for five seconds to check for activity */
 	        	selector.select(timeOut);
