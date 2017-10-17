@@ -132,7 +132,7 @@ public class User {
 	public void printTweets() {
 		for (Tweet tweet : this.tweets) {
 			System.out.println("\tUsername: " + tweet.getUserName());
-			System.out.println("\tTime: " + tweet.getdtUTC());
+			System.out.println("\tTime: " + tweet.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma"));
 			System.out.println("\tMessage: " + tweet.getMessage());
 			System.out.println("");
 		}
