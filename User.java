@@ -31,7 +31,7 @@ public class User {
 	 * @param portNumber: Socket port number for this User to listen on
 	 * @effects Assigns parameters to private field
 	 * @modifies userName, portNumber, cI, matrixTi, portsToSendMsg, and tweets private fields
-	 * @returns A new User object
+	 * @return A new User object
 	 * */
 	public User(String userName, Integer portNumber) {
 		this.userName = userName;
@@ -56,21 +56,21 @@ public class User {
 	}
 	
 	/**
-	 * @returns A copy of userName private field
+	 * @return A copy of userName private field
 	 * */
 	public String getUserName() { 
 		return new String(userName); 
 	}
 	
 	/**
-	 * @returns A copy of portNumber private field
+	 * @return A copy of portNumber private field
 	 * */
 	public Integer getPortNumber() {
 		return new Integer(portNumber);
 	}
 	
 	/**
-	 * @returns A copy of portsToSendMsg private field
+	 * @return A copy of portsToSendMsg private field
 	 * */
 	public Map<String, Integer> getPortsToSendMsg() {
 		Map<String, Integer> copy = new HashMap<String, Integer>();
@@ -81,7 +81,7 @@ public class User {
 	}
 	
 	/**
-	 * @returns A copy of matrixT private field
+	 * @return A copy of matrixT private field
 	 * */
 	public Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> getMatrixTi() { 
 		Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> copy = new HashMap<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>();
@@ -145,6 +145,27 @@ public class User {
 	}
 	
 	/**
+	 * @param NP: Container of Events that some User needs to be sent
+	 * @effects Converts NP to a string with "|" delimiter for Event private fields and "," delimiter for each unique Event
+	 * @return A string representation of all Events in NP 
+	 * */
+	public String NPtoString(PriorityQueue<Event> NP) {
+		/* String to represent NP */
+		String NPStr = "";
+		
+		/* Iterate through NP */
+		Iterator<Event> itrNP =  NP.iterator();
+		while (itrNP.hasNext()) {
+			/* Concatenate Event after it has been translated to a string */
+			NPStr += itrNP.next().toString();
+			/* Include delimiter if there are more Events */
+			if (itrNP.hasNext()) NPStr += ",";
+		}
+		
+		return NPStr;
+	}
+	
+	/**
 	 * @effects Prints matrixTi as an NxN matrix where N is the amount of Users
 	 * */
 	public void printMatrixTi() {
@@ -175,7 +196,7 @@ public class User {
 	 * @param eR: Event that has occurred
 	 * @param recipient: User to check if User received eR
 	 * @effects Checks if indirect knowledge of recipient knows about eR
-	 * @returns true if Lamport timestamp of indirect knowledge for recipient is greater than or equal to Lamport timestamp
+	 * @return true if Lamport timestamp of indirect knowledge for recipient is greater than or equal to Lamport timestamp
 	 *          of eR; false otherwise 
 	 * */
 	public Boolean hasRecv(Event eR, String recipient) {
@@ -248,7 +269,7 @@ public class User {
 	
 	/**
 	 * @effects Creates a unique container of Event objects that each User needs to know about
-	 * @returns A partial log of events that each User needs to be sent
+	 * @return A partial log of events that each User needs to be sent
 	 * */
 	public Map<String, PriorityQueue<Event>> onSend() {
 		/* Container to store all Events that some User needs to be sent */

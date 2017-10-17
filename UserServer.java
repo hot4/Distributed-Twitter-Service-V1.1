@@ -97,8 +97,9 @@ public class UserServer {
 			String command = null;
 			String message = null;
 			String matrixTiStr = null;
+			String NPStr = null;
 			SocketChannel sendSC = null;
-			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			ByteBuffer buffer = null;
 			Map<String, PriorityQueue<Event>> NP = new HashMap<String, PriorityQueue<Event>>();
 			
 			/* To determine timeout for input from console */
@@ -146,23 +147,18 @@ public class UserServer {
 	        						if (NPEntry.getKey().equals(portEntry.getKey())) {
 	        							/* Open socket to current User */
 	        							sendSC = SocketChannel.open(new InetSocketAddress("localhost", portEntry.getValue()));
-	        							/* Iterate through all Events the current User needs to be sent */
-	        							Iterator<Event> itrEvent = NPEntry.getValue().iterator();
-	        							while (itrEvent.hasNext()) {
-	        								/* Write event to socket */
-	        								buffer = ByteBuffer.wrap(itrEvent.next().toString().getBytes());
-	        								sendSC.write(buffer);
-	        								/* Clear buffer after Event has been sent */
-	        								buffer.clear();
-	        							}
 	        							
-	        							System.out.println("Sending matrix!");
-	        							/* Write this User's matrix to socket */
+	        							/* Convert this User's matrixTi to a string */
 	        							matrixTiStr = user.matrixTiToString();
-	        							buffer = ByteBuffer.allocate(matrixTiStr.getBytes().length);
-	        							buffer = ByteBuffer.wrap(matrixTiStr.getBytes());
+	        							
+	        							/* Convert all Events current User needs to know about to a string */
+	        							NPStr = user.NPtoString(NPEntry.getValue());
+	        							
+	        							/* Write this User's matrix to socket and the NP Events the current User needs to know about */
+	        							message = matrixTiStr + "," + NPStr;
+	        							buffer = ByteBuffer.allocate(message.getBytes().length);
+	        							buffer = ByteBuffer.wrap(message.getBytes());
 	        							sendSC.write(buffer);
-	        							/* Clear buffer after matrix has been sent */
 	        							buffer.clear();
 	        							
 	        							/* Close socket since all Event(s) have been sent to given port */
@@ -216,6 +212,7 @@ public class UserServer {
 	                	SocketChannel sc = ssChannel.accept();
 	                	
 	                	/* Read data being sent through socket connection */
+	                	buffer = ByteBuffer.allocate(1024);
 	                	rc = sc.read(buffer);
 	              
 	                	/* Check return code from read() */
