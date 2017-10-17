@@ -69,6 +69,10 @@ public class Event implements Comparable<Event> {
 		return new String(this.message);
 	}
 	
+	public String toString() {
+		return new String(this.getType() + "|"  + this.getNode() + "|" + this.getcI() + "|" + this.getdtUTC() + "|" + this.getMessage());
+	}
+	
 	/**
 	 * @returns 1 if this Tweet is before other Tweet, 0 otherwise to have newest Tweets appear first
 	 * */

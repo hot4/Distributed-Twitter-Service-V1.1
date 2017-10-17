@@ -137,13 +137,33 @@ public class UserServer {
 	        			case "Tweet": 
 	        				System.out.print("Input Message: ");
 	        				message = in.readLine();
+	        				
+	        				/* Send all Events that some other User needs to know about given unblocked */
 	        				NP = user.onEvent(Event.TWEET, message);
-	        				for (Integer port : user.getPortsToSendMsg().values()) {
-	        					sendSC = SocketChannel.open(new InetSocketAddress("localhost", port));
-	        					buffer = ByteBuffer.wrap(message.getBytes());
-	        					sendSC.write(buffer);
-	        					buffer.clear();
-	        					sendSC.close();
+	        				
+	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
+	        				for (Map.Entry<String, PriorityQueue<Event>> NPEntry : NP.entrySet()) {
+	        					/* Iterate through known ports until current User is found */
+	        					for (Map.Entry<String, Integer> portEntry : user.getPortsToSendMsg().entrySet()) {
+	        						/* Check if given portEntry has the same username as the given NPEntry username */
+	        						if (NPEntry.getKey().equals(portEntry.getKey())) {
+	        							/* Open socket to current User */
+	        							sendSC = SocketChannel.open(new InetSocketAddress("localhost", portEntry.getValue()));
+	        							/* Iterate through all Events the current User needs to be sent */
+	        							Iterator<Event> itrEvent = NPEntry.getValue().iterator();
+	        							while (itrEvent.hasNext()) {
+	        								/* Write event to socket */
+	        								buffer = ByteBuffer.wrap(itrEvent.next().toString().getBytes());
+	        								sendSC.write(buffer);
+	        								/* Clear buffer after Event has been sent */
+	        								buffer.clear();
+	        							}
+	        							/* Close socket since all Event(s) have been sent to given port */
+	        							sendSC.close();
+	        							/* Since current NPEntry has been satisfied and next entry requires a different port */
+	        							break;
+	        						}
+	        					}
 	        				}
 	        				break;
 	        			case "Block":
