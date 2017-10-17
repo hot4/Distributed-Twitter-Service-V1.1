@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
@@ -19,7 +20,7 @@ public class User {
 	/* Matrix to represent direct and indirect knowledge */
 	private Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTi;
 	/* Index associated with this and other Users for matrix */
-	private Integer userIndex;
+	private Integer amtOfUsers;
 	/* Container for all Tweets sent in the simulation */
 	private PriorityQueue<Tweet> tweets;
 	/* Container for all Events that occurred that some User does not know about */
@@ -38,12 +39,9 @@ public class User {
 		this.cI = 0;
 		this.matrixTi = new HashMap<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>();
 		this.portsToSendMsg = new HashMap<String, Integer>();
-		this.userIndex = 0;
+		this.amtOfUsers = 0;
 		this.tweets = new PriorityQueue<Tweet>();
 		this.PL = new PriorityQueue<Event>();
-		
-		/* Have this User be first row in matrix */
-		this.matrixTi.put(makePair(userName), new ArrayList<Pair<String, Integer>>());
 	}
 	
 	/**
@@ -52,8 +50,8 @@ public class User {
 	 * @modifies userIndex private field 
 	 * */
 	private Pair<String, Integer> makePair(String userName) {
-		Pair<String, Integer> pair = Pair.createPair(userName, this.userIndex);
-		this.userIndex++;
+		Pair<String, Integer> pair = Pair.createPair(userName, new Integer(this.amtOfUsers));
+		this.amtOfUsers++;
 		return pair;
 	}
 	
@@ -94,22 +92,56 @@ public class User {
 	}
 	
 	/**
-	 * @param userName: Identifier for some User for this User to follow
-	 * @param portNumber: Socket port number that some User uses to listen on
-	 * @param size: Total amount of Users
-	 * @effects Adds User to matrixTi with size and portNumber to portsToSendMsg
+	 * @param allUsers: A list of (username, port number)
+	 * @effects Generates NxN matrix for this Users where N represents the amount of users
+	 * @effects Adds username and port number for all users in the list that are not this User's username
 	 * @modifies matrixTi and portsToSendMsg private fields
 	 * */
-	public void follow(String userName, Integer portNumber, Integer size) {
-		 /* Create row with a size that represents each User */
-		 ArrayList<Pair<String, Integer>> value = new ArrayList<Pair<String, Integer>>();
-		 for (int i = 0; i < size; i++) {
-		 	 /* Initialize all column entries to zero */
-	 		 value.add(Pair.createPair(userName, 0));
-		 }
-		 
-		 this.matrixTi.put(makePair(userName), value);
-		 this.portsToSendMsg.put(userName, portNumber);
+	public void follow(List<String[]> allUsers) {
+		for (int i = 0; i < allUsers.size(); i++) {
+			ArrayList<Pair<String, Integer>> columns = new ArrayList<Pair<String, Integer>>();
+			for (int j = 0; j < allUsers.size(); j++) {
+				columns.add(Pair.createPair(allUsers.get(j)[0], 0));
+			}
+			this.matrixTi.put(makePair(allUsers.get(i)[0]), columns);
+			
+			if (!allUsers.get(i)[0].equals(this.getUserName())) {
+				this.portsToSendMsg.put(allUsers.get(i)[0], Integer.parseInt(allUsers.get(i)[1]));
+			}
+		}
+	}
+	
+	/**
+	 * @effects Converts matrixTi to a string with "|" delimiters for each associated value in the entry and "," delimiter for each entry in the map
+	 * @return A string representation of matrixTi 
+	 * */
+	public String matrixTiToString() {
+		/* String to represent matrixTi */
+		String matrixTiStr = "";
+		
+		/* Iterate through all entries in matrixTi */
+		Iterator<Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>> itrMatrixTi = this.matrixTi.entrySet().iterator();
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> entry : this.matrixTi.entrySet()) {
+			/* Advance matrixTi iterator */
+			itrMatrixTi.next();
+			/* Concatenate key for given entry */
+			matrixTiStr += entry.getKey().getKey() + "|" + entry.getKey().getValue() + "|";
+			
+			/* Iterate through all objects in the value container */
+			Iterator<Pair<String, Integer>> itrValue =  entry.getValue().iterator();
+			for (Pair<String, Integer> value : entry.getValue()) {
+				/* Advance container iterator for given value in matrixTi */
+				itrValue.next();
+				/* Concatenate each object in container */
+				matrixTiStr += value.getKey() + "|" + value.getValue();
+				/* Include delimiter if there are more objects in container */
+				if (itrValue.hasNext()) matrixTiStr += "|";
+			}
+			/* Include delimiter if there are more entries in matrixTi */
+			if(itrMatrixTi.hasNext()) matrixTiStr += ",";
+		}
+		
+		return matrixTiStr;
 	}
 	
 	/**
@@ -120,7 +152,8 @@ public class User {
 		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> entry : this.matrixTi.entrySet()) {
 			/* Iterate through the size of the current value in map */
 			for (int i = 0; i < entry.getValue().size(); i++) {
-				System.out.println(entry.getValue().get(i).getValue());
+				System.out.print(entry.getValue().get(i).getKey() + " ");
+				System.out.print(entry.getValue().get(i).getValue() + " ");
 			}
 			System.out.println("");
 		}
@@ -176,10 +209,8 @@ public class User {
 	 * @effects Increments local event counter 
 	 * @effects Increments Ti(i,i)
 	 * @effects Adds eR to PL
-	 * @effects Creates a unique container of Event objects that each User needs to know about
-	 * @returns A partial log of events that each User needs to be sent
 	 * */
-	public Map<String, PriorityQueue<Event>> onEvent(Integer type, String message) {
+	public void onEvent(Integer type, String message) {
 		/* Capture current time the Event was triggered in UTC */
 		DateTime dtUTC = new DateTime(DateTimeZone.UTC);
 		
@@ -213,7 +244,13 @@ public class User {
 			Tweet tweet = new Tweet(this.userName, message, dtUTC);
 			this.tweets.add(tweet);
 		}
-		
+	}
+	
+	/**
+	 * @effects Creates a unique container of Event objects that each User needs to know about
+	 * @returns A partial log of events that each User needs to be sent
+	 * */
+	public Map<String, PriorityQueue<Event>> onSend() {
 		/* Container to store all Events that some User needs to be sent */
 		Map<String, PriorityQueue<Event>> unblockedUsersNP = new HashMap<String, PriorityQueue<Event>>();
 		

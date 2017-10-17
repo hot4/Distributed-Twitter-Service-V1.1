@@ -55,10 +55,9 @@ public class UserServer {
 				if (userInfo[0].equals(userName)) {
 					/* Create User object based on command argument */
 					user = new User(userInfo[0], Integer.parseInt(userInfo[1]));
-				} else {
-					/* Store all user informations */
-					allUsers.add(userInfo);
 				}
+				/* Store all user information */
+				allUsers.add(userInfo);
 			}
 		} catch (FileNotFoundException e) {
 			/* ERROR: Could not open file */
@@ -90,17 +89,14 @@ public class UserServer {
 		}
 		
 		/* Follow all users */
-		for (int i = 0; i < allUsers.size(); i++) {
-			/* Pass userName and portNumber information of all Users from file */
-			user.follow(allUsers.get(i)[0], Integer.parseInt(allUsers.get(i)[1]), allUsers.size() + 1);
-		}
-		
+		user.follow(allUsers);		
 		
 		try {	
 			/* To get input from console */
 			in = new BufferedReader(new InputStreamReader(System.in));
 			String command = null;
 			String message = null;
+			String matrixTiStr = null;
 			SocketChannel sendSC = null;
 			ByteBuffer buffer = ByteBuffer.allocate(1024);
 			Map<String, PriorityQueue<Event>> NP = new HashMap<String, PriorityQueue<Event>>();
@@ -139,7 +135,8 @@ public class UserServer {
 	        				message = in.readLine();
 	        				
 	        				/* Send all Events that some other User needs to know about given unblocked */
-	        				NP = user.onEvent(Event.TWEET, message);
+	        				user.onEvent(Event.TWEET, message);
+	        				NP = user.onSend();
 	        				
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
 	        				for (Map.Entry<String, PriorityQueue<Event>> NPEntry : NP.entrySet()) {
@@ -158,6 +155,16 @@ public class UserServer {
 	        								/* Clear buffer after Event has been sent */
 	        								buffer.clear();
 	        							}
+	        							
+	        							System.out.println("Sending matrix!");
+	        							/* Write this User's matrix to socket */
+	        							matrixTiStr = user.matrixTiToString();
+	        							buffer = ByteBuffer.allocate(matrixTiStr.getBytes().length);
+	        							buffer = ByteBuffer.wrap(matrixTiStr.getBytes());
+	        							sendSC.write(buffer);
+	        							/* Clear buffer after matrix has been sent */
+	        							buffer.clear();
+	        							
 	        							/* Close socket since all Event(s) have been sent to given port */
 	        							sendSC.close();
 	        							/* Since current NPEntry has been satisfied and next entry requires a different port */
