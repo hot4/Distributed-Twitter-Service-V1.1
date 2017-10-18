@@ -9,6 +9,7 @@ public class Event implements Comparable<Event> {
 	/* Delimiter for Event encapsulation */
 	public static String EVENTDELIIMITER = ",";
 	public static String FIELDDELIMITER = "|";
+	public static String FIELDREGEX = "\\|";
 	
 	/* Maps to category of Event */
 	private Integer type;

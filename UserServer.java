@@ -157,7 +157,7 @@ public class UserServer {
 	        							NPStr = user.NPtoString(NPEntry.getValue());
 	        							
 	        							/* Write this User's matrix to socket and the NP Events the current User needs to know about */
-	        							message = matrixTiStr + UserServer.DELIMITER + NPStr;
+	        							message = user.getUserName() + UserServer.DELIMITER + matrixTiStr + UserServer.DELIMITER + NPStr;
 	        							buffer = ByteBuffer.allocate(message.getBytes().length);
 	        							buffer = ByteBuffer.wrap(message.getBytes());
 	        							sendSC.write(buffer);

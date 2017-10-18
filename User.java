@@ -12,6 +12,7 @@ import org.joda.time.DateTimeZone;
 public class User {
 	public static String MATRIXROWDELIMITER = ",";
 	public static String MATRIXFIELDDELIMITER = "|";
+	public static String MATRIXFIELDREGEX = "\\|";
 	
 	/* Identifier for this User */
 	private String userName;
@@ -75,13 +76,14 @@ public class User {
 		String[] item = null;
 		for (int i = 0; i < matrixTkArr.length; i++) {
 			/* Split each row of matrixTkArr by User.MATRIXFIELDDELIMITER */
-			item = matrixTkArr[i].split(User.MATRIXFIELDDELIMITER);
+			item = matrixTkArr[i].split(User.MATRIXFIELDREGEX);
 			/* Generate (key, value) pair for row */
 			key = Pair.createPair(item[0], Integer.parseInt(item[1]));
 			
 			/* Create value items for remaining indexes in array */
 			for (int j = 2; j < item.length-1; j++) {
 				values.add(Pair.createPair(item[j], Integer.parseInt(item[j+1])));
+				j++;
 			}
 			
 			/* Add (key, value) pair to matrixTk */
@@ -103,7 +105,7 @@ public class User {
 		/* Iterate through each index of the string array and convert to Event object */
 		for (int i = 0; i < NPArr.length; i++) {
 			/* Split each item of NPArr by Event.FIELDDELIMITER */
-			item = NPArr[i].split(Event.FIELDDELIMITER);
+			item = NPArr[i].split(Event.FIELDREGEX);
 			/* Create Event object for each item and add to NP */
 			NP.add(new Event(Integer.parseInt(item[0]), item[1], Integer.parseInt(item[2]), new DateTime(item[3]), item[4]));
 		}
@@ -353,7 +355,14 @@ public class User {
 		return unblockedUsersNP;
 	}
 	
-	public void onRecv(ByteBuffer data) {
+	/**
+	 * @param data: Information that was sent from other User containing username, matrixTk, and NP (a contain of events)
+	 * @effects Updates this User's matrixTi to have max values for both direct and indirect knowledge using data
+	 * @effects Updates this User's PL using data
+	 * @effects Updates this User's tweets using data
+	 * @modifies matrixTi, PL, and tweets private fields
+	 * */
+	public void onRecv(ByteBuffer data) {		
 		/* Convert ByteBuffer to String */
 		String dataStr = new String(data.array());
 		
@@ -361,13 +370,69 @@ public class User {
 		String[] dataArr = dataStr.trim().split(UserServer.DELIMITER);
 		
 		/* Split each index based on unique delimiter */
-		String[] matrixTkArr = (dataArr[0]).split(User.MATRIXROWDELIMITER);
-		String[] NPArr = (dataArr[1]).split(Event.EVENTDELIIMITER);
+		String siteK = dataArr[0];
+		String[] matrixTkArr = (dataArr[1]).split(User.MATRIXROWDELIMITER);
+		String[] NPArr = (dataArr[2]).split(Event.EVENTDELIIMITER);
 		
 		/* matrixTk to compare to matrixTi */
 		Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTk = this.stringToMatrixTk(matrixTkArr);
 		
+		/* Get value mapped by this User's username in matrixTi */
+		ArrayList<Pair<String, Integer>> matrixTiDirect = null;
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTiEntry : this.matrixTi.entrySet()) {
+			if (matrixTiEntry.getKey().getKey().equals(this.getUserName())) {
+				matrixTiDirect = matrixTiEntry.getValue();
+				break;
+			}
+		}
+		
+		/* Get value mapped by the site's username in matrixTk */
+		ArrayList<Pair<String, Integer>> matrixTkDirect = null;
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTkEntry : matrixTk.entrySet()) {
+			if (matrixTkEntry.getKey().getKey().equals(siteK)) {
+				matrixTkDirect = matrixTkEntry.getValue();
+				break;
+			}
+		}
+		
+		/* Update Direct Knowledge of matrixTi: Ti(i,j) = max(Ti(i,j), Tk(k,j)) */
+		for (int j = 0; j < matrixTiDirect.size(); j++) {
+			matrixTiDirect.set(j, Pair.createPair(matrixTiDirect.get(j).getKey(), Math.max(matrixTiDirect.get(j).getValue(), matrixTkDirect.get(j).getValue())));
+		}
+		
+		/* Update Indirect Knowledge of matrixTi: Ti(j, k) = max(Ti(j, l), Tk(j, l)) */
+		ArrayList<Pair<String, Integer>> matrixTkIndirect = null;
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTiEntry : this.matrixTi.entrySet()) {
+			/* Skip over Direct Knowledge */
+			if (matrixTiEntry.getKey().getKey().equals(this.getUserName())) continue;
+			
+			/* Get value mapped by current key for matrixTk */
+			for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTkEntry : matrixTk.entrySet()) {
+				if (matrixTkEntry.getKey().getKey().equals(matrixTiEntry.getKey().getKey()))
+					matrixTkIndirect = matrixTkEntry.getValue();
+			}
+			
+			/* Update Ti(j,k) */
+			for (int l = 0; l < matrixTiEntry.getValue().size(); l++) {
+				/* Get current value mapping in matrixTi, use index of use index of mapping to compare values of each pair */
+				matrixTiEntry.getValue().set(l, Pair.createPair(matrixTiEntry.getValue().get(l).getKey(), Math.max(matrixTiEntry.getValue().get(l).getValue(), matrixTkIndirect.get(l).getValue())));
+			}
+		}
+		
 		/* NP to add to PL */
 		PriorityQueue<Event> NP = this.stringToNP(NPArr);
+		
+		/* Add all Events from NP to PL */
+		this.PL.addAll(NP);
+		
+		/* Add all Events that are Tweets into tweets */
+		Iterator<Event> itrNP = NP.iterator();
+		Event event = null;
+		while (itrNP.hasNext()) {
+			event = itrNP.next();
+			if (event.getType().equals(Event.TWEET)) {
+				this.tweets.add(new Tweet(event));
+			}
+		}
 	}
 }
