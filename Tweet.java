@@ -1,4 +1,5 @@
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 public class Tweet implements Comparable<Tweet> {
 	/* Creator of Tweet */
@@ -52,6 +53,16 @@ public class Tweet implements Comparable<Tweet> {
 	 * */
 	public DateTime getdtUTC(){
 		return new DateTime(dtUTC);
+	}
+	
+	/**
+	 * @effects Prints private fields in a meaningful way to console
+	 * */
+	public void printTweet() {
+		System.out.println("\tUsername: " + this.getUserName());
+		System.out.println("\tTime: " + this.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma"));
+		System.out.println("\tMessage: " + this.getMessage());
+		System.out.println("");
 	}
 
 	/**

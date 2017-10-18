@@ -229,10 +229,15 @@ public class User {
 	public void printMatrixTi() {
 		/* Iterate through all keys in map */
 		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> entry : this.matrixTi.entrySet()) {
+			System.out.print("Row: " + entry.getKey().getKey() + " ==> ");
+			
 			/* Iterate through the size of the current value in map */
 			for (int i = 0; i < entry.getValue().size(); i++) {
-				System.out.print(entry.getValue().get(i).getKey() + " ");
-				System.out.print(entry.getValue().get(i).getValue() + " ");
+				System.out.print("Column: " + entry.getValue().get(i).getKey() + " ");
+				System.out.print("cI: " + entry.getValue().get(i).getValue());
+				if (i != entry.getValue().size()) {
+					System.out.print(" | ");
+				}
 			}
 			System.out.println("");
 		}
@@ -243,10 +248,18 @@ public class User {
 	 * */
 	public void printTweets() {
 		for (Tweet tweet : this.tweets) {
-			System.out.println("\tUsername: " + tweet.getUserName());
-			System.out.println("\tTime: " + tweet.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma"));
-			System.out.println("\tMessage: " + tweet.getMessage());
-			System.out.println("");
+			System.out.println("Tweet:");
+			tweet.printTweet();
+		}
+	}
+	
+	/**
+	 * @effects Prints all events this User has created or received
+	 * */
+	public void printPL() {
+		for (Event event : this.PL) {
+			System.out.println("Event:");
+			event.printEvent();
 		}
 	}
 	

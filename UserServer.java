@@ -122,6 +122,8 @@ public class UserServer {
 	        /* Return code maps to a closed connection or data received from socket connection */
 	        Integer rc = -1;
 	        
+	        System.out.println("Hello " + user.getUserName() + ". Welcome to Twitter!");
+	        
 	        /* Start server */
 	        while (true) {
 	        	/* All incoming messages have been handled and waiting for input from console */
@@ -131,7 +133,6 @@ public class UserServer {
 	        	while ((System.currentTimeMillis() - startTime) < timeOut && !in.ready()) {}
 	        	if (in.ready()) {
 	        		command = in.readLine();
-	        		System.out.println("Entered: " + command);
 	        		switch(command) {
 	        			case "Tweet": 
 	        				System.out.print("Input Message: ");
@@ -180,14 +181,22 @@ public class UserServer {
 	        			case "View":
 	        				user.printTweets();
 	        				break;
+	        			case "Log":
+	        				user.printPL();
+	        				break;
+	        			case "Matrix":
+	        				user.printMatrixTi();
+	        				break;
 	        			case "Help":
 	        				System.out.println("Tweet: Input a message for User's to see whom you did not block.");
 	        				System.out.println("Block: By inputting a username, the subsequent User will be blocked from viewing your tweets");
 	        				System.out.println("Unblock: By inputting a username, the subsequent User will be unblocked from viewing your tweets.");
 	        				System.out.println("View: View Tweets posted by yourself or by User's you are following and are not blocked from.");
+	        				System.out.println("Log: View Events that have occurred either by yourself or by User's in the system.");
+	        				System.out.println("Matrix: View Matrix of local even counter. Represented as NxN.");
 	        				break;
 	        			default:
-	        				System.out.println("Only valid commands include: {Tweet, Block, Unblock, View, Help}");
+	        				System.out.println("Only valid commands include: {Tweet, Block, Unblock, View, Log, Matrix, Help}");
 	        				break;
 	        		}
 	        	}
