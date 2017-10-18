@@ -1,3 +1,4 @@
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -9,6 +10,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 public class User {
+	public static String MATRIXROWDELIMITER = ",";
+	public static String MATRIXFIELDDELIMITER = "|";
+	
 	/* Identifier for this User */
 	private String userName;
 	/* Port number this User is listening on */
@@ -53,6 +57,58 @@ public class User {
 		Pair<String, Integer> pair = Pair.createPair(userName, new Integer(this.amtOfUsers));
 		this.amtOfUsers++;
 		return pair;
+	}
+	
+	/**
+	 * @param matrixTkArr: A matrix represented in an array of strings
+	 * @effects Converts matrixTkArr to a matrix
+	 * @return A matrix type from matrixTkArr
+	 * */
+	private Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> stringToMatrixTk(String[] matrixTkArr) {
+		Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTk = new HashMap<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>();
+		
+		/* Key and Value temporary holders to generate matrixTk */
+		Pair<String, Integer> key = null;
+		ArrayList<Pair<String, Integer>> values = new ArrayList<Pair<String, Integer>>();
+		
+		/* Iterate through each row of the string array and convert to (key, value) */
+		String[] item = null;
+		for (int i = 0; i < matrixTkArr.length; i++) {
+			/* Split each row of matrixTkArr by User.MATRIXFIELDDELIMITER */
+			item = matrixTkArr[i].split(User.MATRIXFIELDDELIMITER);
+			/* Generate (key, value) pair for row */
+			key = Pair.createPair(item[0], Integer.parseInt(item[1]));
+			
+			/* Create value items for remaining indexes in array */
+			for (int j = 2; j < item.length-1; j++) {
+				values.add(Pair.createPair(item[j], Integer.parseInt(item[j+1])));
+			}
+			
+			/* Add (key, value) pair to matrixTk */
+			matrixTk.put(key, values);
+		}
+		
+		return matrixTk;
+	}
+	
+	/**
+	 * @param NPArr: A container of Event objects in a string format
+	 * @effects Converts each item in NPArr into an Event
+	 * @return A new container of Event objects from NPArr 
+	 * */
+	private PriorityQueue<Event> stringToNP(String[] NPArr) {
+		PriorityQueue<Event> NP = new PriorityQueue<Event>();
+		
+		String[] item = null;
+		/* Iterate through each index of the string array and convert to Event object */
+		for (int i = 0; i < NPArr.length; i++) {
+			/* Split each item of NPArr by Event.FIELDDELIMITER */
+			item = NPArr[i].split(Event.FIELDDELIMITER);
+			/* Create Event object for each item and add to NP */
+			NP.add(new Event(Integer.parseInt(item[0]), item[1], Integer.parseInt(item[2]), new DateTime(item[3]), item[4]));
+		}
+		
+		return NP;
 	}
 	
 	/**
@@ -112,7 +168,7 @@ public class User {
 	}
 	
 	/**
-	 * @effects Converts matrixTi to a string with "|" delimiters for each associated value in the entry and "," delimiter for each entry in the map
+	 * @effects Converts matrixTi to a string with User.MATRIXFIELDDELIMITER for each associated value in the entry and User.MATRIXROWDELIMITER for each entry in the map
 	 * @return A string representation of matrixTi 
 	 * */
 	public String matrixTiToString() {
@@ -125,7 +181,7 @@ public class User {
 			/* Advance matrixTi iterator */
 			itrMatrixTi.next();
 			/* Concatenate key for given entry */
-			matrixTiStr += entry.getKey().getKey() + "|" + entry.getKey().getValue() + "|";
+			matrixTiStr += entry.getKey().getKey() + User.MATRIXFIELDDELIMITER + entry.getKey().getValue() + User.MATRIXFIELDDELIMITER;
 			
 			/* Iterate through all objects in the value container */
 			Iterator<Pair<String, Integer>> itrValue =  entry.getValue().iterator();
@@ -133,12 +189,12 @@ public class User {
 				/* Advance container iterator for given value in matrixTi */
 				itrValue.next();
 				/* Concatenate each object in container */
-				matrixTiStr += value.getKey() + "|" + value.getValue();
+				matrixTiStr += value.getKey() + User.MATRIXFIELDDELIMITER + value.getValue();
 				/* Include delimiter if there are more objects in container */
-				if (itrValue.hasNext()) matrixTiStr += "|";
+				if (itrValue.hasNext()) matrixTiStr += User.MATRIXFIELDDELIMITER;
 			}
 			/* Include delimiter if there are more entries in matrixTi */
-			if(itrMatrixTi.hasNext()) matrixTiStr += ",";
+			if(itrMatrixTi.hasNext()) matrixTiStr += User.MATRIXROWDELIMITER;
 		}
 		
 		return matrixTiStr;
@@ -146,7 +202,7 @@ public class User {
 	
 	/**
 	 * @param NP: Container of Events that some User needs to be sent
-	 * @effects Converts NP to a string with "|" delimiter for Event private fields and "," delimiter for each unique Event
+	 * @effects Converts NP to a string with Event.FIELDDELIMITER for Event private fields and Event.EVENTDELIMIETER for each unique Event
 	 * @return A string representation of all Events in NP 
 	 * */
 	public String NPtoString(PriorityQueue<Event> NP) {
@@ -159,7 +215,7 @@ public class User {
 			/* Concatenate Event after it has been translated to a string */
 			NPStr += itrNP.next().toString();
 			/* Include delimiter if there are more Events */
-			if (itrNP.hasNext()) NPStr += ",";
+			if (itrNP.hasNext()) NPStr += Event.EVENTDELIIMITER;
 		}
 		
 		return NPStr;
@@ -295,5 +351,23 @@ public class User {
 		}
 		
 		return unblockedUsersNP;
+	}
+	
+	public void onRecv(ByteBuffer data) {
+		/* Convert ByteBuffer to String */
+		String dataStr = new String(data.array());
+		
+		/* Split on UserServer.DELIMITER to get matrixTk and NP */
+		String[] dataArr = dataStr.trim().split(UserServer.DELIMITER);
+		
+		/* Split each index based on unique delimiter */
+		String[] matrixTkArr = (dataArr[0]).split(User.MATRIXROWDELIMITER);
+		String[] NPArr = (dataArr[1]).split(Event.EVENTDELIIMITER);
+		
+		/* matrixTk to compare to matrixTi */
+		Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTk = this.stringToMatrixTk(matrixTkArr);
+		
+		/* NP to add to PL */
+		PriorityQueue<Event> NP = this.stringToNP(NPArr);
 	}
 }

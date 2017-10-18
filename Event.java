@@ -6,6 +6,10 @@ public class Event implements Comparable<Event> {
 	public static Integer BLOCK = 2;
 	public static Integer UNBLOCK = 3;
 	
+	/* Delimiter for Event encapsulation */
+	public static String EVENTDELIIMITER = ",";
+	public static String FIELDDELIMITER = "|";
+	
 	/* Maps to category of Event */
 	private Integer type;
 	/* Username of where the Event occurred */
@@ -70,7 +74,7 @@ public class Event implements Comparable<Event> {
 	}
 	
 	public String toString() {
-		return new String(this.getType() + "|"  + this.getNode() + "|" + this.getcI() + "|" + this.getdtUTC() + "|" + this.getMessage());
+		return new String(this.getType() + Event.FIELDDELIMITER  + this.getNode() + Event.FIELDDELIMITER + this.getcI() + Event.FIELDDELIMITER + this.getdtUTC() + Event.FIELDDELIMITER + this.getMessage());
 	}
 	
 	/**

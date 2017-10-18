@@ -20,6 +20,8 @@ import java.util.Set;
 
 public class UserServer {
 	
+	public static String DELIMITER = "&";
+	
 	public static void main(String[] args) {
 		if(args.length != 2) {
 	        System.out.println("FAILURE: Improper amount of arguments used");
@@ -155,7 +157,7 @@ public class UserServer {
 	        							NPStr = user.NPtoString(NPEntry.getValue());
 	        							
 	        							/* Write this User's matrix to socket and the NP Events the current User needs to know about */
-	        							message = matrixTiStr + "," + NPStr;
+	        							message = matrixTiStr + UserServer.DELIMITER + NPStr;
 	        							buffer = ByteBuffer.allocate(message.getBytes().length);
 	        							buffer = ByteBuffer.wrap(message.getBytes());
 	        							sendSC.write(buffer);
@@ -224,7 +226,7 @@ public class UserServer {
 	                		buffer.flip();
 	                		sc.write(buffer);
 	                		
-	                		System.out.println("Received: " + new String(buffer.array()).trim());
+	                		user.onRecv(buffer);
 	                		
 	                		buffer.clear();
 	                	}
