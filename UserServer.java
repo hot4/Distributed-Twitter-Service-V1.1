@@ -20,6 +20,8 @@ import java.util.Set;
 
 public class UserServer {
 	
+	public static String DELIMITER = "&";
+	
 	public static void main(String[] args) {
 		if(args.length != 2) {
 	        System.out.println("FAILURE: Improper amount of arguments used");
@@ -55,10 +57,9 @@ public class UserServer {
 				if (userInfo[0].equals(userName)) {
 					/* Create User object based on command argument */
 					user = new User(userInfo[0], Integer.parseInt(userInfo[1]));
-				} else {
-					/* Store all user informations */
-					allUsers.add(userInfo);
 				}
+				/* Store all user information */
+				allUsers.add(userInfo);
 			}
 		} catch (FileNotFoundException e) {
 			/* ERROR: Could not open file */
@@ -90,19 +91,17 @@ public class UserServer {
 		}
 		
 		/* Follow all users */
-		for (int i = 0; i < allUsers.size(); i++) {
-			/* Pass userName and portNumber information of all Users from file */
-			user.follow(allUsers.get(i)[0], Integer.parseInt(allUsers.get(i)[1]), allUsers.size() + 1);
-		}
-		
+		user.follow(allUsers);		
 		
 		try {	
 			/* To get input from console */
 			in = new BufferedReader(new InputStreamReader(System.in));
 			String command = null;
 			String message = null;
+			String matrixTiStr = null;
+			String NPStr = null;
 			SocketChannel sendSC = null;
-			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			ByteBuffer buffer = null;
 			Map<String, PriorityQueue<Event>> NP = new HashMap<String, PriorityQueue<Event>>();
 			
 			/* To determine timeout for input from console */
@@ -123,6 +122,8 @@ public class UserServer {
 	        /* Return code maps to a closed connection or data received from socket connection */
 	        Integer rc = -1;
 	        
+	        System.out.println("Hello " + user.getUserName() + ". Welcome to Twitter!");
+	        
 	        /* Start server */
 	        while (true) {
 	        	/* All incoming messages have been handled and waiting for input from console */
@@ -132,14 +133,14 @@ public class UserServer {
 	        	while ((System.currentTimeMillis() - startTime) < timeOut && !in.ready()) {}
 	        	if (in.ready()) {
 	        		command = in.readLine();
-	        		System.out.println("Entered: " + command);
 	        		switch(command) {
 	        			case "Tweet": 
 	        				System.out.print("Input Message: ");
 	        				message = in.readLine();
 	        				
 	        				/* Send all Events that some other User needs to know about given unblocked */
-	        				NP = user.onEvent(Event.TWEET, message);
+	        				user.onEvent(Event.TWEET, message);
+	        				NP = user.onSend();
 	        				
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
 	        				for (Map.Entry<String, PriorityQueue<Event>> NPEntry : NP.entrySet()) {
@@ -149,15 +150,20 @@ public class UserServer {
 	        						if (NPEntry.getKey().equals(portEntry.getKey())) {
 	        							/* Open socket to current User */
 	        							sendSC = SocketChannel.open(new InetSocketAddress("localhost", portEntry.getValue()));
-	        							/* Iterate through all Events the current User needs to be sent */
-	        							Iterator<Event> itrEvent = NPEntry.getValue().iterator();
-	        							while (itrEvent.hasNext()) {
-	        								/* Write event to socket */
-	        								buffer = ByteBuffer.wrap(itrEvent.next().toString().getBytes());
-	        								sendSC.write(buffer);
-	        								/* Clear buffer after Event has been sent */
-	        								buffer.clear();
-	        							}
+	        							
+	        							/* Convert this User's matrixTi to a string */
+	        							matrixTiStr = user.matrixTiToString();
+	        							
+	        							/* Convert all Events current User needs to know about to a string */
+	        							NPStr = user.NPtoString(NPEntry.getValue());
+	        							
+	        							/* Write this User's matrix to socket and the NP Events the current User needs to know about */
+	        							message = user.getUserName() + UserServer.DELIMITER + matrixTiStr + UserServer.DELIMITER + NPStr;
+	        							buffer = ByteBuffer.allocate(message.getBytes().length);
+	        							buffer = ByteBuffer.wrap(message.getBytes());
+	        							sendSC.write(buffer);
+	        							buffer.clear();
+	        							
 	        							/* Close socket since all Event(s) have been sent to given port */
 	        							sendSC.close();
 	        							/* Since current NPEntry has been satisfied and next entry requires a different port */
@@ -175,14 +181,22 @@ public class UserServer {
 	        			case "View":
 	        				user.printTweets();
 	        				break;
+	        			case "Log":
+	        				user.printPL();
+	        				break;
+	        			case "Matrix":
+	        				user.printMatrixTi();
+	        				break;
 	        			case "Help":
 	        				System.out.println("Tweet: Input a message for User's to see whom you did not block.");
 	        				System.out.println("Block: By inputting a username, the subsequent User will be blocked from viewing your tweets");
 	        				System.out.println("Unblock: By inputting a username, the subsequent User will be unblocked from viewing your tweets.");
 	        				System.out.println("View: View Tweets posted by yourself or by User's you are following and are not blocked from.");
+	        				System.out.println("Log: View Events that have occurred either by yourself or by User's in the system.");
+	        				System.out.println("Matrix: View Matrix of local even counter. Represented as NxN.");
 	        				break;
 	        			default:
-	        				System.out.println("Only valid commands include: {Tweet, Block, Unblock, View, Help}");
+	        				System.out.println("Only valid commands include: {Tweet, Block, Unblock, View, Log, Matrix, Help}");
 	        				break;
 	        		}
 	        	}
@@ -209,6 +223,7 @@ public class UserServer {
 	                	SocketChannel sc = ssChannel.accept();
 	                	
 	                	/* Read data being sent through socket connection */
+	                	buffer = ByteBuffer.allocate(1024);
 	                	rc = sc.read(buffer);
 	              
 	                	/* Check return code from read() */
@@ -220,7 +235,7 @@ public class UserServer {
 	                		buffer.flip();
 	                		sc.write(buffer);
 	                		
-	                		System.out.println("Received: " + new String(buffer.array()).trim());
+	                		user.onRecv(buffer);
 	                		
 	                		buffer.clear();
 	                	}

@@ -1,6 +1,8 @@
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
@@ -8,6 +10,10 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 public class User {
+	public static String MATRIXROWDELIMITER = ",";
+	public static String MATRIXFIELDDELIMITER = "|";
+	public static String MATRIXFIELDREGEX = "\\|";
+	
 	/* Identifier for this User */
 	private String userName;
 	/* Port number this User is listening on */
@@ -19,7 +25,7 @@ public class User {
 	/* Matrix to represent direct and indirect knowledge */
 	private Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTi;
 	/* Index associated with this and other Users for matrix */
-	private Integer userIndex;
+	private Integer amtOfUsers;
 	/* Container for all Tweets sent in the simulation */
 	private PriorityQueue<Tweet> tweets;
 	/* Container for all Events that occurred that some User does not know about */
@@ -30,7 +36,7 @@ public class User {
 	 * @param portNumber: Socket port number for this User to listen on
 	 * @effects Assigns parameters to private field
 	 * @modifies userName, portNumber, cI, matrixTi, portsToSendMsg, and tweets private fields
-	 * @returns A new User object
+	 * @return A new User object
 	 * */
 	public User(String userName, Integer portNumber) {
 		this.userName = userName;
@@ -38,12 +44,9 @@ public class User {
 		this.cI = 0;
 		this.matrixTi = new HashMap<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>();
 		this.portsToSendMsg = new HashMap<String, Integer>();
-		this.userIndex = 0;
+		this.amtOfUsers = 0;
 		this.tweets = new PriorityQueue<Tweet>();
 		this.PL = new PriorityQueue<Event>();
-		
-		/* Have this User be first row in matrix */
-		this.matrixTi.put(makePair(userName), new ArrayList<Pair<String, Integer>>());
 	}
 	
 	/**
@@ -52,27 +55,80 @@ public class User {
 	 * @modifies userIndex private field 
 	 * */
 	private Pair<String, Integer> makePair(String userName) {
-		Pair<String, Integer> pair = Pair.createPair(userName, this.userIndex);
-		this.userIndex++;
+		Pair<String, Integer> pair = Pair.createPair(userName, new Integer(this.amtOfUsers));
+		this.amtOfUsers++;
 		return pair;
 	}
 	
 	/**
-	 * @returns A copy of userName private field
+	 * @param matrixTkArr: A matrix represented in an array of strings
+	 * @effects Converts matrixTkArr to a matrix
+	 * @return A matrix type from matrixTkArr
+	 * */
+	private Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> stringToMatrixTk(String[] matrixTkArr) {
+		Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTk = new HashMap<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>();
+		
+		/* Key and Value temporary holders to generate matrixTk */
+		Pair<String, Integer> key = null;
+		ArrayList<Pair<String, Integer>> values = new ArrayList<Pair<String, Integer>>();
+		
+		/* Iterate through each row of the string array and convert to (key, value) */
+		String[] item = null;
+		for (int i = 0; i < matrixTkArr.length; i++) {
+			/* Split each row of matrixTkArr by User.MATRIXFIELDDELIMITER */
+			item = matrixTkArr[i].split(User.MATRIXFIELDREGEX);
+			/* Generate (key, value) pair for row */
+			key = Pair.createPair(item[0], Integer.parseInt(item[1]));
+			
+			/* Create value items for remaining indexes in array */
+			for (int j = 2; j < item.length-1; j++) {
+				values.add(Pair.createPair(item[j], Integer.parseInt(item[j+1])));
+				j++;
+			}
+			
+			/* Add (key, value) pair to matrixTk */
+			matrixTk.put(key, values);
+		}
+		
+		return matrixTk;
+	}
+	
+	/**
+	 * @param NPArr: A container of Event objects in a string format
+	 * @effects Converts each item in NPArr into an Event
+	 * @return A new container of Event objects from NPArr 
+	 * */
+	private PriorityQueue<Event> stringToNP(String[] NPArr) {
+		PriorityQueue<Event> NP = new PriorityQueue<Event>();
+		
+		String[] item = null;
+		/* Iterate through each index of the string array and convert to Event object */
+		for (int i = 0; i < NPArr.length; i++) {
+			/* Split each item of NPArr by Event.FIELDDELIMITER */
+			item = NPArr[i].split(Event.FIELDREGEX);
+			/* Create Event object for each item and add to NP */
+			NP.add(new Event(Integer.parseInt(item[0]), item[1], Integer.parseInt(item[2]), new DateTime(item[3]), item[4]));
+		}
+		
+		return NP;
+	}
+	
+	/**
+	 * @return A copy of userName private field
 	 * */
 	public String getUserName() { 
 		return new String(userName); 
 	}
 	
 	/**
-	 * @returns A copy of portNumber private field
+	 * @return A copy of portNumber private field
 	 * */
 	public Integer getPortNumber() {
 		return new Integer(portNumber);
 	}
 	
 	/**
-	 * @returns A copy of portsToSendMsg private field
+	 * @return A copy of portsToSendMsg private field
 	 * */
 	public Map<String, Integer> getPortsToSendMsg() {
 		Map<String, Integer> copy = new HashMap<String, Integer>();
@@ -83,7 +139,7 @@ public class User {
 	}
 	
 	/**
-	 * @returns A copy of matrixT private field
+	 * @return A copy of matrixT private field
 	 * */
 	public Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> getMatrixTi() { 
 		Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> copy = new HashMap<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>();
@@ -94,22 +150,77 @@ public class User {
 	}
 	
 	/**
-	 * @param userName: Identifier for some User for this User to follow
-	 * @param portNumber: Socket port number that some User uses to listen on
-	 * @param size: Total amount of Users
-	 * @effects Adds User to matrixTi with size and portNumber to portsToSendMsg
+	 * @param allUsers: A list of (username, port number)
+	 * @effects Generates NxN matrix for this Users where N represents the amount of users
+	 * @effects Adds username and port number for all users in the list that are not this User's username
 	 * @modifies matrixTi and portsToSendMsg private fields
 	 * */
-	public void follow(String userName, Integer portNumber, Integer size) {
-		 /* Create row with a size that represents each User */
-		 ArrayList<Pair<String, Integer>> value = new ArrayList<Pair<String, Integer>>();
-		 for (int i = 0; i < size; i++) {
-		 	 /* Initialize all column entries to zero */
-	 		 value.add(Pair.createPair(userName, 0));
-		 }
-		 
-		 this.matrixTi.put(makePair(userName), value);
-		 this.portsToSendMsg.put(userName, portNumber);
+	public void follow(List<String[]> allUsers) {
+		for (int i = 0; i < allUsers.size(); i++) {
+			ArrayList<Pair<String, Integer>> columns = new ArrayList<Pair<String, Integer>>();
+			for (int j = 0; j < allUsers.size(); j++) {
+				columns.add(Pair.createPair(allUsers.get(j)[0], 0));
+			}
+			this.matrixTi.put(makePair(allUsers.get(i)[0]), columns);
+			
+			if (!allUsers.get(i)[0].equals(this.getUserName())) {
+				this.portsToSendMsg.put(allUsers.get(i)[0], Integer.parseInt(allUsers.get(i)[1]));
+			}
+		}
+	}
+	
+	/**
+	 * @effects Converts matrixTi to a string with User.MATRIXFIELDDELIMITER for each associated value in the entry and User.MATRIXROWDELIMITER for each entry in the map
+	 * @return A string representation of matrixTi 
+	 * */
+	public String matrixTiToString() {
+		/* String to represent matrixTi */
+		String matrixTiStr = "";
+		
+		/* Iterate through all entries in matrixTi */
+		Iterator<Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>> itrMatrixTi = this.matrixTi.entrySet().iterator();
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> entry : this.matrixTi.entrySet()) {
+			/* Advance matrixTi iterator */
+			itrMatrixTi.next();
+			/* Concatenate key for given entry */
+			matrixTiStr += entry.getKey().getKey() + User.MATRIXFIELDDELIMITER + entry.getKey().getValue() + User.MATRIXFIELDDELIMITER;
+			
+			/* Iterate through all objects in the value container */
+			Iterator<Pair<String, Integer>> itrValue =  entry.getValue().iterator();
+			for (Pair<String, Integer> value : entry.getValue()) {
+				/* Advance container iterator for given value in matrixTi */
+				itrValue.next();
+				/* Concatenate each object in container */
+				matrixTiStr += value.getKey() + User.MATRIXFIELDDELIMITER + value.getValue();
+				/* Include delimiter if there are more objects in container */
+				if (itrValue.hasNext()) matrixTiStr += User.MATRIXFIELDDELIMITER;
+			}
+			/* Include delimiter if there are more entries in matrixTi */
+			if(itrMatrixTi.hasNext()) matrixTiStr += User.MATRIXROWDELIMITER;
+		}
+		
+		return matrixTiStr;
+	}
+	
+	/**
+	 * @param NP: Container of Events that some User needs to be sent
+	 * @effects Converts NP to a string with Event.FIELDDELIMITER for Event private fields and Event.EVENTDELIMIETER for each unique Event
+	 * @return A string representation of all Events in NP 
+	 * */
+	public String NPtoString(PriorityQueue<Event> NP) {
+		/* String to represent NP */
+		String NPStr = "";
+		
+		/* Iterate through NP */
+		Iterator<Event> itrNP =  NP.iterator();
+		while (itrNP.hasNext()) {
+			/* Concatenate Event after it has been translated to a string */
+			NPStr += itrNP.next().toString();
+			/* Include delimiter if there are more Events */
+			if (itrNP.hasNext()) NPStr += Event.EVENTDELIIMITER;
+		}
+		
+		return NPStr;
 	}
 	
 	/**
@@ -118,9 +229,15 @@ public class User {
 	public void printMatrixTi() {
 		/* Iterate through all keys in map */
 		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> entry : this.matrixTi.entrySet()) {
+			System.out.print("Row: " + entry.getKey().getKey() + " ==> ");
+			
 			/* Iterate through the size of the current value in map */
 			for (int i = 0; i < entry.getValue().size(); i++) {
-				System.out.println(entry.getValue().get(i).getValue());
+				System.out.print("Column: " + entry.getValue().get(i).getKey() + " ");
+				System.out.print("cI: " + entry.getValue().get(i).getValue());
+				if (i != entry.getValue().size()) {
+					System.out.print(" | ");
+				}
 			}
 			System.out.println("");
 		}
@@ -131,10 +248,18 @@ public class User {
 	 * */
 	public void printTweets() {
 		for (Tweet tweet : this.tweets) {
-			System.out.println("\tUsername: " + tweet.getUserName());
-			System.out.println("\tTime: " + tweet.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma"));
-			System.out.println("\tMessage: " + tweet.getMessage());
-			System.out.println("");
+			System.out.println("Tweet:");
+			tweet.printTweet();
+		}
+	}
+	
+	/**
+	 * @effects Prints all events this User has created or received
+	 * */
+	public void printPL() {
+		for (Event event : this.PL) {
+			System.out.println("Event:");
+			event.printEvent();
 		}
 	}
 	
@@ -142,7 +267,7 @@ public class User {
 	 * @param eR: Event that has occurred
 	 * @param recipient: User to check if User received eR
 	 * @effects Checks if indirect knowledge of recipient knows about eR
-	 * @returns true if Lamport timestamp of indirect knowledge for recipient is greater than or equal to Lamport timestamp
+	 * @return true if Lamport timestamp of indirect knowledge for recipient is greater than or equal to Lamport timestamp
 	 *          of eR; false otherwise 
 	 * */
 	public Boolean hasRecv(Event eR, String recipient) {
@@ -176,10 +301,8 @@ public class User {
 	 * @effects Increments local event counter 
 	 * @effects Increments Ti(i,i)
 	 * @effects Adds eR to PL
-	 * @effects Creates a unique container of Event objects that each User needs to know about
-	 * @returns A partial log of events that each User needs to be sent
 	 * */
-	public Map<String, PriorityQueue<Event>> onEvent(Integer type, String message) {
+	public void onEvent(Integer type, String message) {
 		/* Capture current time the Event was triggered in UTC */
 		DateTime dtUTC = new DateTime(DateTimeZone.UTC);
 		
@@ -213,7 +336,13 @@ public class User {
 			Tweet tweet = new Tweet(this.userName, message, dtUTC);
 			this.tweets.add(tweet);
 		}
-		
+	}
+	
+	/**
+	 * @effects Creates a unique container of Event objects that each User needs to know about
+	 * @return A partial log of events that each User needs to be sent
+	 * */
+	public Map<String, PriorityQueue<Event>> onSend() {
 		/* Container to store all Events that some User needs to be sent */
 		Map<String, PriorityQueue<Event>> unblockedUsersNP = new HashMap<String, PriorityQueue<Event>>();
 		
@@ -237,5 +366,86 @@ public class User {
 		}
 		
 		return unblockedUsersNP;
+	}
+	
+	/**
+	 * @param data: Information that was sent from other User containing username, matrixTk, and NP (a contain of events)
+	 * @effects Updates this User's matrixTi to have max values for both direct and indirect knowledge using data
+	 * @effects Updates this User's PL using data
+	 * @effects Updates this User's tweets using data
+	 * @modifies matrixTi, PL, and tweets private fields
+	 * */
+	public void onRecv(ByteBuffer data) {		
+		/* Convert ByteBuffer to String */
+		String dataStr = new String(data.array());
+		
+		/* Split on UserServer.DELIMITER to get matrixTk and NP */
+		String[] dataArr = dataStr.trim().split(UserServer.DELIMITER);
+		
+		/* Split each index based on unique delimiter */
+		String siteK = dataArr[0];
+		String[] matrixTkArr = (dataArr[1]).split(User.MATRIXROWDELIMITER);
+		String[] NPArr = (dataArr[2]).split(Event.EVENTDELIIMITER);
+		
+		/* matrixTk to compare to matrixTi */
+		Map<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTk = this.stringToMatrixTk(matrixTkArr);
+		
+		/* Get value mapped by this User's username in matrixTi */
+		ArrayList<Pair<String, Integer>> matrixTiDirect = null;
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTiEntry : this.matrixTi.entrySet()) {
+			if (matrixTiEntry.getKey().getKey().equals(this.getUserName())) {
+				matrixTiDirect = matrixTiEntry.getValue();
+				break;
+			}
+		}
+		
+		/* Get value mapped by the site's username in matrixTk */
+		ArrayList<Pair<String, Integer>> matrixTkDirect = null;
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTkEntry : matrixTk.entrySet()) {
+			if (matrixTkEntry.getKey().getKey().equals(siteK)) {
+				matrixTkDirect = matrixTkEntry.getValue();
+				break;
+			}
+		}
+		
+		/* Update Direct Knowledge of matrixTi: Ti(i,j) = max(Ti(i,j), Tk(k,j)) */
+		for (int j = 0; j < matrixTiDirect.size(); j++) {
+			matrixTiDirect.set(j, Pair.createPair(matrixTiDirect.get(j).getKey(), Math.max(matrixTiDirect.get(j).getValue(), matrixTkDirect.get(j).getValue())));
+		}
+		
+		/* Update Indirect Knowledge of matrixTi: Ti(j, k) = max(Ti(j, l), Tk(j, l)) */
+		ArrayList<Pair<String, Integer>> matrixTkIndirect = null;
+		for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTiEntry : this.matrixTi.entrySet()) {
+			/* Skip over Direct Knowledge */
+			if (matrixTiEntry.getKey().getKey().equals(this.getUserName())) continue;
+			
+			/* Get value mapped by current key for matrixTk */
+			for (Map.Entry<Pair<String, Integer>, ArrayList<Pair<String, Integer>>> matrixTkEntry : matrixTk.entrySet()) {
+				if (matrixTkEntry.getKey().getKey().equals(matrixTiEntry.getKey().getKey()))
+					matrixTkIndirect = matrixTkEntry.getValue();
+			}
+			
+			/* Update Ti(j,k) */
+			for (int l = 0; l < matrixTiEntry.getValue().size(); l++) {
+				/* Get current value mapping in matrixTi, use index of use index of mapping to compare values of each pair */
+				matrixTiEntry.getValue().set(l, Pair.createPair(matrixTiEntry.getValue().get(l).getKey(), Math.max(matrixTiEntry.getValue().get(l).getValue(), matrixTkIndirect.get(l).getValue())));
+			}
+		}
+		
+		/* NP to add to PL */
+		PriorityQueue<Event> NP = this.stringToNP(NPArr);
+		
+		/* Add all Events from NP to PL */
+		this.PL.addAll(NP);
+		
+		/* Add all Events that are Tweets into tweets */
+		Iterator<Event> itrNP = NP.iterator();
+		Event event = null;
+		while (itrNP.hasNext()) {
+			event = itrNP.next();
+			if (event.getType().equals(Event.TWEET)) {
+				this.tweets.add(new Tweet(event));
+			}
+		}
 	}
 }

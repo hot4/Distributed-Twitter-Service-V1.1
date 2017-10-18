@@ -1,4 +1,5 @@
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 public class Tweet implements Comparable<Tweet> {
 	/* Creator of Tweet */
@@ -14,7 +15,7 @@ public class Tweet implements Comparable<Tweet> {
 	 * @param dtUTC: Time at which the Tweet was created, represented in UTC time
 	 * @effects Assigns parameters to private fields
 	 * @modifies userName, message, and dtUTC private fields 
-	 * @returns A new Tweet object
+	 * @return A new Tweet object
 	 * */
 	public Tweet(String userName, String message, DateTime dtUTC) {
 		this.userName = userName;
@@ -23,28 +24,49 @@ public class Tweet implements Comparable<Tweet> {
 	}
 	
 	/**
-	 * @returns A copy of userName private field
+	 * @param event: Event object that is of type Tweet
+	 * @effects Maps relevant private fields from Event object to Tweet private fields
+	 * @return A new Tweet object
+	 * */
+	public Tweet(Event event) { 
+		this.userName = event.getNode();
+		this.message = event.getMessage();
+		this.dtUTC = event.getdtUTC();
+	}
+	
+	/**
+	 * @return A copy of userName private field
 	 * */
 	public String getUserName() {
 		return new String(this.userName);
 	}
 	
 	/**
-	 * @returns A copy of message private field
+	 * @return A copy of message private field
 	 * */
 	public String getMessage() {
 		return new String(this.message);
 	}
 	
 	/**
-	 * @returns A copy of dtUTC private field
+	 * @return A copy of dtUTC private field
 	 * */
 	public DateTime getdtUTC(){
 		return new DateTime(dtUTC);
 	}
+	
+	/**
+	 * @effects Prints private fields in a meaningful way to console
+	 * */
+	public void printTweet() {
+		System.out.println("\tUsername: " + this.getUserName());
+		System.out.println("\tTime: " + this.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma"));
+		System.out.println("\tMessage: " + this.getMessage());
+		System.out.println("");
+	}
 
 	/**
-	 * @returns 1 if this Tweet is before other Tweet, 0 otherwise to have newest Tweets appear first
+	 * @return 1 if this Tweet is before other Tweet, 0 otherwise to have newest Tweets appear first
 	 * */
 	@Override
 	public int compareTo(Tweet obj2) {

@@ -1,10 +1,16 @@
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 public class Event implements Comparable<Event> {
 	/* Constants to map a type to the appropriate category of Event */
 	public static Integer TWEET = 1;
 	public static Integer BLOCK = 2;
 	public static Integer UNBLOCK = 3;
+	
+	/* Delimiter for Event encapsulation */
+	public static String EVENTDELIIMITER = ",";
+	public static String FIELDDELIMITER = "|";
+	public static String FIELDREGEX = "\\|";
 	
 	/* Maps to category of Event */
 	private Integer type;
@@ -70,7 +76,29 @@ public class Event implements Comparable<Event> {
 	}
 	
 	public String toString() {
-		return new String(this.getType() + "|"  + this.getNode() + "|" + this.getcI() + "|" + this.getdtUTC() + "|" + this.getMessage());
+		return new String(this.getType() + Event.FIELDDELIMITER  + this.getNode() + Event.FIELDDELIMITER + this.getcI() + Event.FIELDDELIMITER + this.getdtUTC() + Event.FIELDDELIMITER + this.getMessage());
+	}
+	
+	public void printEvent() {
+		String typeStr = null;
+		switch (this.type) {
+			case 1:
+				typeStr = "Tweet";
+				break;
+			case 2: 
+				typeStr = "Block";
+				break;
+			case 3:
+				typeStr = "Unblock";
+				break;
+		}
+		
+		System.out.println("\tType: " + typeStr);
+		System.out.println("\tCreator: " + this.node);
+		System.out.println("\tci: " + Integer.toString(this.cI));
+		System.out.println("\tMessage: " + this.message);
+		System.out.println("\tTime: " + this.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma"));
+		System.out.println("");
 	}
 	
 	/**
