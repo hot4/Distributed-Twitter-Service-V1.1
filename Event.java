@@ -102,7 +102,7 @@ public class Event implements Comparable<Event> {
 	}
 	
 	/**
-	 * @returns 1 if this Tweet is before other Tweet, 0 otherwise to have newest Tweets appear first
+	 * @returns 1 if this Event is before other Event, 0 otherwise to have newest Events appear first
 	 * */
 	@Override
 	public int compareTo(Event obj2) {

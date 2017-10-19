@@ -10,6 +10,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 public class User {
+	/* Delimiter for User encapsulation */
 	public static String MATRIXROWDELIMITER = ",";
 	public static String MATRIXFIELDDELIMITER = "|";
 	public static String MATRIXFIELDREGEX = "\\|";

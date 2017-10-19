@@ -20,8 +20,12 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 public class UserServer {
-	
+	/* Delimiter for UserServer encapsulation */
 	public static String DELIMITER = "&";
+	
+	public static String DIRREGEX = "\\";
+	public static String SOURCE = "src";
+	public static String DIRECTORY = "storage";
 	
 	public static void main(String[] args) {
 		if(args.length != 2) {
@@ -31,6 +35,46 @@ public class UserServer {
 	    }
 		
 		new UserServer(args[0], args[1]);
+	}
+	
+	/**
+	 * @param userName: Name of subdirectory
+	 * @effects Creates a master directory in the src directory if none exists
+	 * @effects Creates subdirectory within the master directory if none exists 
+	 * */
+	public static String createDirectory(String userName) {
+		File temp = new File("");
+		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX;
+		File directory = new File(path);
+		
+		/* Check if directory exists */
+		if (!directory.exists()) {
+			try {
+				/* Create master directory */
+				directory.mkdir();
+			} catch (SecurityException e) {
+				System.err.println("ERROR: Could not make root directory.");
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+		
+		path = path + userName + UserServer.DIRREGEX;
+		File subdir = new File(path);
+		
+		/* Check if subdirectory exists */
+		if(!subdir.exists()) {
+			try {
+				/* Create subdirectory */
+				subdir.mkdir();
+			} catch (SecurityException e) {
+				System.err.println("ERROR: Could not make subdirectory.");
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+		
+		return path;
 	}
 	
 	/**
@@ -63,7 +107,7 @@ public class UserServer {
 		
 		try {
 			/* Read file from src folder */
-			in = new BufferedReader(new FileReader(currentPath + "\\src\\" + fileName));
+			in = new BufferedReader(new FileReader(currentPath + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + fileName));
 			/* Parse file to get User information */
 			while ((line = in.readLine()) != null) {
 				/* Remove white spaces and split based on comma separator */
@@ -108,6 +152,9 @@ public class UserServer {
 		
 		/* Follow all users */
 		user.follow(allUsers);		
+		
+		/* Create directory */
+		UserServer.createDirectory(user.getUserName());
 		
 		try {	
 			/* To get input from console */
