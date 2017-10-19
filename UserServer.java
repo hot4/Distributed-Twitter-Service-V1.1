@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -30,6 +31,21 @@ public class UserServer {
 	    }
 		
 		new UserServer(args[0], args[1]);
+	}
+	
+	/**
+	 * @param port: Port to have server connect to
+	 * @effects Checks if connection is available
+	 * @return true if socket is able to connect to port, false otherwise 
+	 * */
+	public static boolean hostAvailabilityCheck(Integer port) { 
+	    try (Socket s = new Socket("localhost", port)) {
+	    	s.close();
+	        return true;
+	    } catch (IOException ex) {
+	        /* Port is not available */
+	    }
+	    return false;
 	}
 	
 	public UserServer(String fileName, String userName) {		
@@ -148,6 +164,12 @@ public class UserServer {
 	        					for (Map.Entry<String, Integer> portEntry : user.getPortsToSendMsg().entrySet()) {
 	        						/* Check if given portEntry has the same username as the given NPEntry username */
 	        						if (NPEntry.getKey().equals(portEntry.getKey())) {
+	        							/* Check if port is available to send data to */
+	        							if(!UserServer.hostAvailabilityCheck(portEntry.getValue())) {
+	        								/* Ignore port since not available */
+	        								continue;
+	        							}
+	        							
 	        							/* Open socket to current User */
 	        							sendSC = SocketChannel.open(new InetSocketAddress("localhost", portEntry.getValue()));
 	        							
