@@ -10,9 +10,13 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 public class User {
+	/* Delimiter for User encapsulation */
 	public static String MATRIXROWDELIMITER = ",";
 	public static String MATRIXFIELDDELIMITER = "|";
 	public static String MATRIXFIELDREGEX = "\\|";
+	
+	/* Name of file to write information to */
+	public static String LOGFILE = "Log.txt";
 	
 	/* Identifier for this User */
 	private String userName;
@@ -302,7 +306,7 @@ public class User {
 	 * @effects Increments Ti(i,i)
 	 * @effects Adds eR to PL
 	 * */
-	public void onEvent(Integer type, String message) {
+	public void onEvent(Integer type, String message, String path) {
 		/* Capture current time the Event was triggered in UTC */
 		DateTime dtUTC = new DateTime(DateTimeZone.UTC);
 		
@@ -329,6 +333,7 @@ public class User {
 		/* Create new Event and add to PL */
 		Event event = new Event(type, this.userName, this.cI, dtUTC, message);
 		this.PL.add(event);
+		Event.writeEventToFile(event);
 		
 		/* Check if current Event is a Tweet */
 		if (type.equals(Event.TWEET)) {
@@ -336,6 +341,8 @@ public class User {
 			Tweet tweet = new Tweet(this.userName, message, dtUTC);
 			this.tweets.add(tweet);
 		}
+		
+				
 	}
 	
 	/**
@@ -437,6 +444,9 @@ public class User {
 		
 		/* Add all Events from NP to PL */
 		this.PL.addAll(NP);
+		for (Event event : NP) {
+			Event.writeEventToFile(event);
+		}
 		
 		/* Add all Events that are Tweets into tweets */
 		Iterator<Event> itrNP = NP.iterator();

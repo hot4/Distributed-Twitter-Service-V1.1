@@ -1,3 +1,9 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -41,6 +47,26 @@ public class Event implements Comparable<Event> {
 	}
 	
 	/**
+	 * @param event: Event object to write to file
+	 * @effects Appends event information to file
+	 * */
+	public static void writeEventToFile(Event event) {
+		File temp = new File("");
+		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX + event.getNode() + UserServer.DIRREGEX;;
+		File file = new File(path + UserServer.DIRREGEX + User.LOGFILE);
+		
+		try {
+			Writer writer = new BufferedWriter(new FileWriter(file, true));
+			writer.append(event.toReadableString());
+			writer.close();
+		} catch (IOException e) {
+			System.err.println("ERROR: Could not write to file");
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+	
+	/**
 	 * @returns A copy of type private field
 	 * */
 	public Integer getType() {
@@ -75,24 +101,46 @@ public class Event implements Comparable<Event> {
 		return new String(this.message);
 	}
 	
+	/**
+	 * @return Event object's information encapsulated
+	 * */
 	public String toString() {
 		return new String(this.getType() + Event.FIELDDELIMITER  + this.getNode() + Event.FIELDDELIMITER + this.getcI() + Event.FIELDDELIMITER + this.getdtUTC() + Event.FIELDDELIMITER + this.getMessage());
 	}
 	
-	public void printEvent() {
-		String typeStr = null;
-		switch (this.type) {
-			case 1:
-				typeStr = "Tweet";
-				break;
-			case 2: 
-				typeStr = "Block";
-				break;
-			case 3:
-				typeStr = "Unblock";
-				break;
+	/**
+	 * @return Event object's information in a human readable format
+	 * */
+	public String toReadableString() {
+		return new String("Type: " + this.translateType() + 
+						  "\n\tNode: " + this.getNode() + 
+						  "\n\tcI: " + this.getcI() + 
+						  "\n\tTime: " + this.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma") + 
+						  "\n\tMessage: " + this.getMessage() + "\n\n");
+	}
+	
+	/**
+	 * @returns The mapped value of private field type
+	 * */
+	public String translateType() {
+		String type = null;
+		
+		if (this.getType().equals(Event.TWEET)) {
+			type = "Tweet";
+		} else if (this.getType().equals(Event.BLOCK)) {
+			type = "Block";
+		} else if (this.getType().equals(Event.UNBLOCK)) {
+			type = "Unblock";
 		}
 		
+		return type;
+	}
+	
+	/**
+	 * @effects Prints Event object's information to standard output
+	 **/
+	public void printEvent() {
+		String typeStr = this.translateType();		
 		System.out.println("\tType: " + typeStr);
 		System.out.println("\tCreator: " + this.node);
 		System.out.println("\tci: " + Integer.toString(this.cI));
@@ -102,7 +150,7 @@ public class Event implements Comparable<Event> {
 	}
 	
 	/**
-	 * @returns 1 if this Tweet is before other Tweet, 0 otherwise to have newest Tweets appear first
+	 * @returns 1 if this Event is before other Event, 0 otherwise to have newest Events appear first
 	 * */
 	@Override
 	public int compareTo(Event obj2) {
