@@ -23,6 +23,7 @@ public class UserServer {
 	/* Delimiter for UserServer encapsulation */
 	public static String DELIMITER = "&";
 	
+	/* Directory names path delimiter */
 	public static String DIRREGEX = "\\";
 	public static String SOURCE = "src";
 	public static String DIRECTORY = "storage";
@@ -73,7 +74,7 @@ public class UserServer {
 				System.exit(1);
 			}
 		}
-		
+	
 		return path;
 	}
 	
@@ -154,7 +155,7 @@ public class UserServer {
 		user.follow(allUsers);		
 		
 		/* Create directory */
-		UserServer.createDirectory(user.getUserName());
+		String path = UserServer.createDirectory(user.getUserName());
 		
 		try {	
 			/* To get input from console */
@@ -202,7 +203,7 @@ public class UserServer {
 	        				message = in.readLine();
 	        				
 	        				/* Send all Events that some other User needs to know about given unblocked */
-	        				user.onEvent(Event.TWEET, message);
+	        				user.onEvent(Event.TWEET, message, path);
 	        				NP = user.onSend();
 	        				
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
