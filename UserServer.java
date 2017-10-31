@@ -109,7 +109,7 @@ public class UserServer {
 	                /* Create event object before adding new information */
 	                if (info[0].equals("Type") && !eventFields.isEmpty()) {
                 		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)).withZone(DateTimeZone.UTC), eventFields.get(4));
-                		user.addEvent(event);
+                		user.addEventBasedOnType(event);
                 		eventFields.clear();
 	                }
 	                
@@ -119,7 +119,7 @@ public class UserServer {
 	            
 	            /* Add last event from file */
         		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)), eventFields.get(4));
-        		user.addEvent(event);
+        		user.addEventBasedOnType(event);
 	            
         		/* Close buffered reader */
 				bufferedReader.close();

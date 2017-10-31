@@ -16,6 +16,9 @@ public class Event implements Comparable<Event> {
 	public static Integer UNBLOCKINT = 3;
 	public static String UNBLOCKSTR = "Unblock";
 	
+	public static String BLOCKEDSTR = "blocked";
+	public static String UNBLOCKEDSTR = "unblocked";
+	
 	/* Delimiter for Event encapsulation */
 	public static String EVENTDELIIMITER = ",";
 	public static String FIELDDELIMITER = "|";

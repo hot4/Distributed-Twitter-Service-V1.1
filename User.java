@@ -34,12 +34,16 @@ public class User {
 	private TreeSet<Tweet> tweets;
 	/* Container for all Events that occurred that some User does not know about */
 	private TreeSet<Event> PL;
+	/* Container for all Users who blocked some other User */
+	/* Key: User who is blocking */
+	/* Value: Users who are being blocked */
+	private Map<String, ArrayList<String>> dictionary;
 	
 	/**
 	 * @param userName: Identifier for this User
 	 * @param portNumber: Socket port number for this User to listen on
 	 * @effects Assigns parameters to private field
-	 * @modifies userName, portNumber, cI, matrixTi, portsToSendMsg, tweets, and PL private fields
+	 * @modifies userName, portNumber, cI, matrixTi, portsToSendMsg, tweets, PL, Dictionary private fields
 	 * @return A new User object
 	 * */
 	public User(String userName, Integer portNumber) {
@@ -51,6 +55,7 @@ public class User {
 		this.amtOfUsers = 0;
 		this.tweets = new TreeSet<Tweet>();
 		this.PL = new TreeSet<Event>();
+		this.dictionary = new HashMap<String, ArrayList<String>>();
 	}
 	
 	/**
@@ -251,6 +256,8 @@ public class User {
 	 * @effects Prints all tweets this User has either created or received
 	 * */
 	public void printTweets() {
+		
+		
 		for (Tweet tweet : this.tweets) {
 			System.out.println("Tweet:");
 			tweet.printTweet();
@@ -271,12 +278,47 @@ public class User {
 	 * @param event: Event that occurred
 	 * @effects Adds event to PL
 	 * @effects Adds event to tweets if the event is a tweet
-	 * @modifies PL and tweets private fields
+	 * @effects Adds event to dictionary if the event is blocking some User
+	 * @effects Removes event from dictionary if the envet is unblocking some User
+	 * @modifies PL, tweets, and dictionary private fields
 	 * */
-	public void addEvent(Event event) {
+	public void addEventBasedOnType(Event event) {
 		this.PL.add(event);
+		
 		if (event.getType().equals(Event.TWEETINT)) {
+			/* Create new Tweet and add to tweets */
+
 			this.tweets.add(new Tweet(event));
+		} else if (event.getType().equals(Event.BLOCKINT)) {
+			/* Add blocked information to dictionary */
+			String[] blocked = event.getMessage().split(Event.BLOCKEDSTR);
+			
+			/* Format userName of User who is blocking some other user */
+			String blockedSelf = blocked[0].trim();
+			/* Get all User's blockedSelf has blocked from viewing it's tweets */
+			ArrayList<String> blockedFrom = this.dictionary.get(blockedSelf);
+			
+			if (blockedFrom == null) {
+				blockedFrom = new ArrayList<String>();
+			} 
+			
+			/* Add new blocked User the dictionary */
+			blockedFrom.add(blocked[1].trim());
+			this.dictionary.put(blockedSelf, blockedFrom);
+		} else if (event.getType().equals(Event.UNBLOCKEDSTR)) {
+			/* Add unblocked information to dictionary */
+			String[] unblocked = event.getMessage().split(Event.UNBLOCKEDSTR);
+			
+			/*  Format userName of User who is unblocking some other user */
+			String unblockedSelf = unblocked[0].trim();
+			String unblockedOther = unblocked[1].trim();
+			/* Get all Users's unblockedSelf has blocked from viewing it's tweets */
+			ArrayList<String> blockedFrom = this.dictionary.get(unblockedSelf);
+			
+			if ((blockedFrom != null) && (blockedFrom.contains(unblockedOther))) {
+				blockedFrom.remove(unblockedOther);
+				this.dictionary.put(unblockedSelf, blockedFrom);
+			}
 		}
 	}
 	
@@ -318,6 +360,7 @@ public class User {
 	 * @effects Increments local event counter 
 	 * @effects Increments Ti(i,i)
 	 * @effects Adds eR to PL
+	 * @modifies PL, tweets, and dictionary private fields
 	 * */
 	public void onEvent(Integer type, String message, String path) {
 		/* Capture current time the Event was triggered in UTC */
@@ -348,14 +391,8 @@ public class User {
 		this.PL.add(event);
 		Event.writeEventToFile(this.getUserName(), event);
 		
-		/* Check if current Event is a Tweet */
-		if (type.equals(Event.TWEETINT)) {
-			/* Create new Tweet and add to tweets */
-			Tweet tweet = new Tweet(this.userName, message, dtUTC);
-			this.tweets.add(tweet);
-		}
-		
-				
+		/* Add event based on specified type to private fields */
+		this.addEventBasedOnType(event);
 	}
 	
 	/**
@@ -393,7 +430,7 @@ public class User {
 	 * @effects Updates this User's matrixTi to have max values for both direct and indirect knowledge using data
 	 * @effects Updates this User's PL using data
 	 * @effects Updates this User's tweets using data
-	 * @modifies matrixTi, PL, and tweets private fields
+	 * @modifies matrixTi, PL, tweets, and dictionary private fields
 	 * */
 	public void onRecv(ByteBuffer data) {		
 		/* Convert ByteBuffer to String */
@@ -455,20 +492,9 @@ public class User {
 		/* NP to add to PL */
 		TreeSet<Event> NP = this.stringToNP(NPArr);
 		
-		/* Add all Events from NP to PL */
-		this.PL.addAll(NP);
+		/* Add event based on specified type to private fields */
 		for (Event event : NP) {
-			Event.writeEventToFile(this.getUserName(), event);
-		}
-		
-		/* Add all Events that are Tweets into tweets */
-		Iterator<Event> itrNP = NP.iterator();
-		Event event = null;
-		while (itrNP.hasNext()) {
-			event = itrNP.next();
-			if (event.getType().equals(Event.TWEETINT)) {
-				this.tweets.add(new Tweet(event));
-			}
+			this.addEventBasedOnType(event);
 		}
 	}
 }
