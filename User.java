@@ -39,7 +39,7 @@ public class User {
 	 * @param userName: Identifier for this User
 	 * @param portNumber: Socket port number for this User to listen on
 	 * @effects Assigns parameters to private field
-	 * @modifies userName, portNumber, cI, matrixTi, portsToSendMsg, and tweets private fields
+	 * @modifies userName, portNumber, cI, matrixTi, portsToSendMsg, tweets, and PL private fields
 	 * @return A new User object
 	 * */
 	public User(String userName, Integer portNumber) {
@@ -268,6 +268,19 @@ public class User {
 	}
 	
 	/**
+	 * @param event: Event that occurred
+	 * @effects Adds event to PL
+	 * @effects Adds event to tweets if the event is a tweet
+	 * @modifies PL and tweets private fields
+	 * */
+	public void addEvent(Event event) {
+		this.PL.add(event);
+		if (event.getType().equals(Event.TWEETINT)) {
+			this.tweets.add(new Tweet(event));
+		}
+	}
+	
+	/**
 	 * @param eR: Event that has occurred
 	 * @param recipient: User to check if User received eR
 	 * @effects Checks if indirect knowledge of recipient knows about eR
@@ -309,6 +322,7 @@ public class User {
 	public void onEvent(Integer type, String message, String path) {
 		/* Capture current time the Event was triggered in UTC */
 		DateTime dtUTC = new DateTime(DateTimeZone.UTC);
+		System.out.println("dtUTC: " + dtUTC);
 		
 		/* Increment this User's local event counter */
 		this.cI += 1;
@@ -333,10 +347,10 @@ public class User {
 		/* Create new Event and add to PL */
 		Event event = new Event(type, this.userName, this.cI, dtUTC, message);
 		this.PL.add(event);
-		Event.writeEventToFile(event);
+		Event.writeEventToFile(this.getUserName(), event);
 		
 		/* Check if current Event is a Tweet */
-		if (type.equals(Event.TWEET)) {
+		if (type.equals(Event.TWEETINT)) {
 			/* Create new Tweet and add to tweets */
 			Tweet tweet = new Tweet(this.userName, message, dtUTC);
 			this.tweets.add(tweet);
@@ -445,7 +459,7 @@ public class User {
 		/* Add all Events from NP to PL */
 		this.PL.addAll(NP);
 		for (Event event : NP) {
-			Event.writeEventToFile(event);
+			Event.writeEventToFile(this.getUserName(), event);
 		}
 		
 		/* Add all Events that are Tweets into tweets */
@@ -453,7 +467,7 @@ public class User {
 		Event event = null;
 		while (itrNP.hasNext()) {
 			event = itrNP.next();
-			if (event.getType().equals(Event.TWEET)) {
+			if (event.getType().equals(Event.TWEETINT)) {
 				this.tweets.add(new Tweet(event));
 			}
 		}

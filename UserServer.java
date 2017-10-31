@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+
 public class UserServer {
 	/* Delimiter for UserServer encapsulation */
 	public static String DELIMITER = "&";
@@ -39,11 +42,11 @@ public class UserServer {
 	}
 	
 	/**
-	 * @param userName: Name of subdirectory
+	 * @param user: Current user of the simulation
 	 * @effects Creates a master directory in the src directory if none exists
 	 * @effects Creates subdirectory within the master directory if none exists 
 	 * */
-	public static String createDirectory(String userName) {
+	public static String createDirectory(User user) {
 		File temp = new File("");
 		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX;
 		File directory = new File(path);
@@ -60,7 +63,7 @@ public class UserServer {
 			}
 		}
 		
-		path = path + userName + UserServer.DIRREGEX;
+		path = path + user.getUserName() + UserServer.DIRREGEX;
 		File subdir = new File(path);
 		
 		/* Check if subdirectory exists */
@@ -73,8 +76,63 @@ public class UserServer {
 				e.printStackTrace();
 				System.exit(1);
 			}
+		} else {
+			/* Check if file exists to re-populate data structures */
+			File file = new File(path + UserServer.DIRREGEX + User.LOGFILE);
+			
+			/* No file exists. Just return the path of the subdirectory */
+			if (!file.exists()) return path;
+
+			try {
+				/* Read from file */
+				FileReader fileReader = new FileReader(path + UserServer.DIRREGEX + User.LOGFILE);
+
+	            BufferedReader bufferedReader = new BufferedReader(fileReader);
+	            /* Single line read from file */
+	            String eventInfo  = null;
+	            /* Container of single line information split by regex */
+	            String[] info = null;
+	            /* Container of event information */
+	            ArrayList<String> eventFields = new ArrayList<String>();
+	            
+	            /* Read from file */
+	            while((eventInfo = bufferedReader.readLine()) != null) {
+	            	/* Remove padding from line */
+	            	eventInfo = eventInfo.trim();
+	            	
+	            	/* Skip empty lines */
+	            	if (eventInfo.equals("")) continue;
+	            	
+	            	/* Get line information */
+	                info = eventInfo.split(Event.FIELDREGEX);
+	                
+	                /* Create event object before adding new information */
+	                if (info[0].equals("Type") && !eventFields.isEmpty()) {
+                		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)).withZone(DateTimeZone.UTC), eventFields.get(4));
+                		user.addEvent(event);
+                		eventFields.clear();
+	                }
+	                
+	                /* Add event information to field container */
+	                eventFields.add((String) info[1]);
+	            }   
+	            
+	            /* Add last event from file */
+        		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)), eventFields.get(4));
+        		user.addEvent(event);
+	            
+        		/* Close buffered reader */
+				bufferedReader.close();
+				  
+			} catch (FileNotFoundException e) {
+				System.err.println("ERROR: Could not read from file.");
+				e.printStackTrace();
+			} catch (IOException e) {
+				System.err.println("ERROR: Could not close buffered reader");
+				e.printStackTrace();
+			}
 		}
-	
+				
 		return path;
 	}
 	
@@ -155,7 +213,7 @@ public class UserServer {
 		user.follow(allUsers);		
 		
 		/* Create directory */
-		String path = UserServer.createDirectory(user.getUserName());
+		String path = UserServer.createDirectory(user);
 		
 		try {	
 			/* To get input from console */
@@ -203,7 +261,7 @@ public class UserServer {
 	        				message = in.readLine();
 	        				
 	        				/* Send all Events that some other User needs to know about given unblocked */
-	        				user.onEvent(Event.TWEET, message, path);
+	        				user.onEvent(Event.TWEETINT, message, path);
 	        				NP = user.onSend();
 	        				
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */

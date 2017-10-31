@@ -9,9 +9,12 @@ import org.joda.time.DateTimeZone;
 
 public class Event implements Comparable<Event> {
 	/* Constants to map a type to the appropriate category of Event */
-	public static Integer TWEET = 1;
-	public static Integer BLOCK = 2;
-	public static Integer UNBLOCK = 3;
+	public static Integer TWEETINT = 1;
+	public static String TWEETSTR = "Tweet";
+	public static Integer BLOCKINT = 2;
+	public static String BLOCKSTR = "Block";
+	public static Integer UNBLOCKINT = 3;
+	public static String UNBLOCKSTR = "Unblock";
 	
 	/* Delimiter for Event encapsulation */
 	public static String EVENTDELIIMITER = ",";
@@ -46,13 +49,47 @@ public class Event implements Comparable<Event> {
 		this.message = message;
 	}
 	
+
+	/**
+	 * @param type: String representation of event type
+	 * @returns The map string value of private field
+	 * */
+	public static Integer typeStringToInt(String type) {
+		Integer value = null;
+		if (type.equals(Event.TWEETSTR)) {
+			value = Event.TWEETINT;
+		} else if (type.equals(Event.BLOCKSTR)) {
+			value = Event.BLOCKINT;
+		} else if (type.equals(Event.UNBLOCKSTR)) {
+			value = Event.UNBLOCKINT;
+		}
+		return value;
+	}
+	
+	/**
+	 * @param type: Integer representation of event type
+	 * @returns The mapped value of private field type
+	 * */
+	public static String typeIntToString(Integer type) {
+		String value = null;
+		if (type.equals(Event.TWEETINT)) {
+			value = Event.TWEETSTR;
+		} else if (type.equals(Event.BLOCKINT)) {
+			value = Event.BLOCKSTR;
+		} else if (type.equals(Event.UNBLOCKINT)) {
+			value = Event.UNBLOCKSTR;
+		}
+		
+		return value;
+	}
+	
 	/**
 	 * @param event: Event object to write to file
 	 * @effects Appends event information to file
 	 * */
-	public static void writeEventToFile(Event event) {
+	public static void writeEventToFile(String userName, Event event) {
 		File temp = new File("");
-		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX + event.getNode() + UserServer.DIRREGEX;;
+		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX + userName + UserServer.DIRREGEX;;
 		File file = new File(path + UserServer.DIRREGEX + User.LOGFILE);
 		
 		try {
@@ -112,35 +149,18 @@ public class Event implements Comparable<Event> {
 	 * @return Event object's information in a human readable format
 	 * */
 	public String toReadableString() {
-		return new String("Type: " + this.translateType() + 
-						  "\n\tNode: " + this.getNode() + 
-						  "\n\tcI: " + this.getcI() + 
-						  "\n\tTime: " + this.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma") + 
-						  "\n\tMessage: " + this.getMessage() + "\n\n");
-	}
-	
-	/**
-	 * @returns The mapped value of private field type
-	 * */
-	public String translateType() {
-		String type = null;
-		
-		if (this.getType().equals(Event.TWEET)) {
-			type = "Tweet";
-		} else if (this.getType().equals(Event.BLOCK)) {
-			type = "Block";
-		} else if (this.getType().equals(Event.UNBLOCK)) {
-			type = "Unblock";
-		}
-		
-		return type;
+		return new String("Type" + Event.FIELDDELIMITER + Event.typeIntToString(this.getType()) + 
+						  "\n\tNode" + Event.FIELDDELIMITER + this.getNode() + 
+						  "\n\tcI" + Event.FIELDDELIMITER + this.getcI() + 
+						  "\n\tTime" + Event.FIELDDELIMITER + this.getdtUTC() + 
+						  "\n\tMessage" + Event.FIELDDELIMITER + this.getMessage() + "\n\n");
 	}
 	
 	/**
 	 * @effects Prints Event object's information to standard output
 	 **/
 	public void printEvent() {
-		String typeStr = this.translateType();		
+		String typeStr = Event.typeIntToString(this.getType());		
 		System.out.println("\tType: " + typeStr);
 		System.out.println("\tCreator: " + this.node);
 		System.out.println("\tci: " + Integer.toString(this.cI));
