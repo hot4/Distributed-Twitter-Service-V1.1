@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -31,9 +31,9 @@ public class User {
 	/* Index associated with this and other Users for matrix */
 	private Integer amtOfUsers;
 	/* Container for all Tweets sent in the simulation */
-	private PriorityQueue<Tweet> tweets;
+	private TreeSet<Tweet> tweets;
 	/* Container for all Events that occurred that some User does not know about */
-	private PriorityQueue<Event> PL;
+	private TreeSet<Event> PL;
 	
 	/**
 	 * @param userName: Identifier for this User
@@ -49,8 +49,8 @@ public class User {
 		this.matrixTi = new HashMap<Pair<String, Integer>, ArrayList<Pair<String, Integer>>>();
 		this.portsToSendMsg = new HashMap<String, Integer>();
 		this.amtOfUsers = 0;
-		this.tweets = new PriorityQueue<Tweet>();
-		this.PL = new PriorityQueue<Event>();
+		this.tweets = new TreeSet<Tweet>();
+		this.PL = new TreeSet<Event>();
 	}
 	
 	/**
@@ -102,8 +102,8 @@ public class User {
 	 * @effects Converts each item in NPArr into an Event
 	 * @return A new container of Event objects from NPArr 
 	 * */
-	private PriorityQueue<Event> stringToNP(String[] NPArr) {
-		PriorityQueue<Event> NP = new PriorityQueue<Event>();
+	private TreeSet<Event> stringToNP(String[] NPArr) {
+		TreeSet<Event> NP = new TreeSet<Event>();
 		
 		String[] item = null;
 		/* Iterate through each index of the string array and convert to Event object */
@@ -211,7 +211,7 @@ public class User {
 	 * @effects Converts NP to a string with Event.FIELDDELIMITER for Event private fields and Event.EVENTDELIMIETER for each unique Event
 	 * @return A string representation of all Events in NP 
 	 * */
-	public String NPtoString(PriorityQueue<Event> NP) {
+	public String NPtoString(TreeSet<Event> NP) {
 		/* String to represent NP */
 		String NPStr = "";
 		
@@ -322,7 +322,6 @@ public class User {
 	public void onEvent(Integer type, String message, String path) {
 		/* Capture current time the Event was triggered in UTC */
 		DateTime dtUTC = new DateTime(DateTimeZone.UTC);
-		System.out.println("dtUTC: " + dtUTC);
 		
 		/* Increment this User's local event counter */
 		this.cI += 1;
@@ -363,13 +362,13 @@ public class User {
 	 * @effects Creates a unique container of Event objects that each User needs to know about
 	 * @return A partial log of events that each User needs to be sent
 	 * */
-	public Map<String, PriorityQueue<Event>> onSend() {
+	public Map<String, TreeSet<Event>> onSend() {
 		/* Container to store all Events that some User needs to be sent */
-		Map<String, PriorityQueue<Event>> unblockedUsersNP = new HashMap<String, PriorityQueue<Event>>();
+		Map<String, TreeSet<Event>> unblockedUsersNP = new HashMap<String, TreeSet<Event>>();
 		
 		/* Iterate through all other Users */
 		for (String currUserName : this.portsToSendMsg.keySet()){
-			PriorityQueue<Event> missingKnowledge = new PriorityQueue<Event>();
+			TreeSet<Event> missingKnowledge = new TreeSet<Event>();
 			
 			/* Iterate through all Events in Li and determine if current User needs to know about it */
 			Iterator<Event> itrPL = this.PL.iterator();
@@ -454,7 +453,7 @@ public class User {
 		}
 		
 		/* NP to add to PL */
-		PriorityQueue<Event> NP = this.stringToNP(NPArr);
+		TreeSet<Event> NP = this.stringToNP(NPArr);
 		
 		/* Add all Events from NP to PL */
 		this.PL.addAll(NP);
