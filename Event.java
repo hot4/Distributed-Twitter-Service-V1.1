@@ -87,6 +87,7 @@ public class Event implements Comparable<Event> {
 	}
 	
 	/**
+	 * @param userName: Current User of application
 	 * @param event: Event object to write to file
 	 * @effects Appends event information to file
 	 * */

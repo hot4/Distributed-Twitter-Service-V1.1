@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -224,7 +223,7 @@ public class UserServer {
 			String NPStr = null;
 			SocketChannel sendSC = null;
 			ByteBuffer buffer = null;
-			Map<String, TreeSet<Event>> NP = new HashMap<String, TreeSet<Event>>();
+			Map<String, ArrayList<Event>> NP = new HashMap<String, ArrayList<Event>>();
 			
 			/* To determine timeout for input from console */
 			long startTime = -1;
@@ -265,7 +264,7 @@ public class UserServer {
 	        				NP = user.onSend();
 	        				
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
-	        				for (Map.Entry<String, TreeSet<Event>> NPEntry : NP.entrySet()) {
+	        				for (Map.Entry<String, ArrayList<Event>> NPEntry : NP.entrySet()) {
 	        					/* Iterate through known ports until current User is found */
 	        					for (Map.Entry<String, Integer> portEntry : user.getPortsToSendMsg().entrySet()) {
 	        						/* Check if given portEntry has the same username as the given NPEntry username */
