@@ -104,7 +104,7 @@ public class User {
 			/* Split each item of NPArr by Event.FIELDDELIMITER */
 			item = NPArr[i].split(Event.FIELDREGEX);
 			/* Create Event object for each item and add to NP */
-			NP.add(new Event(Integer.parseInt(item[0]), item[1], Integer.parseInt(item[2]), new DateTime(item[3]), item[4]));
+			NP.add(new Event(Integer.parseInt(item[0]), item[1], Integer.parseInt(item[2]), new DateTime(item[3]).withZone(DateTimeZone.UTC), item[4]));
 		}
 		
 		return NP;
@@ -311,6 +311,18 @@ public class User {
 	}
 	
 	/**
+	 * @param event: Event to compare
+	 * @effects Checks if event is contained in PL private field
+	 * @returns True if event is already found in PL, false otherwise
+	 * */
+	public Boolean alreadyRecv(Event event) {
+		for (Event currEvent : this.PL) {
+			if (currEvent.equals(event)) return true;
+		}
+		return false;
+	}
+	
+	/**
 	 * @param eR: Event that has occurred
 	 * @param recipient: User to check if User received eR
 	 * @effects Checks if indirect knowledge of recipient knows about eR
@@ -477,7 +489,7 @@ public class User {
 		/* Add event based on specified type to private fields and write to storage */
 		for (Event event : NP) {
 			/* This User already knows about the event */
-			if (!this.PL.contains(event)) {
+			if (!this.alreadyRecv(event)) {
 				Event.writeEventToFile(this.getUserName(), event);
 				this.addEventBasedOnType(event);
 			}
