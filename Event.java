@@ -178,7 +178,7 @@ public class Event implements Comparable<Event> {
 			   this.node.equals(obj2.getNode()) && 
 			   this.cI.equals(obj2.getcI()) &&
 			   this.message.equals(obj2.getMessage()) &&
-			   this.dtUTC.equals(obj2.getdtUTC());
+			   this.dtUTC.withZone(DateTimeZone.UTC).equals(obj2.getdtUTC().withZone(DateTimeZone.UTC));
 	}
 	
 	/**

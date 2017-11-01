@@ -44,11 +44,13 @@ public class UserServer {
 	 * @param user: Current user of the simulation
 	 * @effects Creates a master directory in the src directory if none exists
 	 * @effects Creates subdirectory within the master directory if none exists 
+	 * @return Amount of events that have locally occurred for this user
 	 * */
-	public static String createDirectory(User user) {
+	public static Integer createDirectory(User user) {
 		File temp = new File("");
 		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX;
 		File directory = new File(path);
+		Integer amount = 0;
 		
 		/* Check if directory exists */
 		if (!directory.exists()) {
@@ -79,8 +81,8 @@ public class UserServer {
 			/* Check if file exists to re-populate data structures */
 			File file = new File(path + UserServer.DIRREGEX + User.LOGFILE);
 			
-			/* No file exists. Just return the path of the subdirectory */
-			if (!file.exists()) return path;
+			/* No file exists */
+			if (!file.exists()) return amount;
 
 			try {
 				/* Read from file */
@@ -109,6 +111,10 @@ public class UserServer {
 	                if (info[0].equals("Type") && !eventFields.isEmpty()) {
                 		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)).withZone(DateTimeZone.UTC), eventFields.get(4));
                 		user.addEventBasedOnType(event);
+                		/* Increment the amount of times this user has generated an event */
+                		if (event.getNode().equals(user.getUserName())) {
+                			amount++;
+                		}
                 		eventFields.clear();
 	                }
 	                
@@ -119,6 +125,10 @@ public class UserServer {
 	            /* Add last event from file */
         		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)), eventFields.get(4));
         		user.addEventBasedOnType(event);
+        		/* Check if last event was causator */
+        		if (event.getNode().equals(user.getUserName())) {
+        			amount++;
+        		}
 	            
         		/* Close buffered reader */
 				bufferedReader.close();
@@ -132,7 +142,7 @@ public class UserServer {
 			}
 		}
 				
-		return path;
+		return amount;
 	}
 	
 	/**
@@ -212,7 +222,8 @@ public class UserServer {
 		user.follow(allUsers);		
 		
 		/* Create directory */
-		String path = UserServer.createDirectory(user);
+		Integer amount = UserServer.createDirectory(user);
+		user.initAmountOfEvents(amount);
 		
 		try {	
 			/* To get input from console */
@@ -260,7 +271,7 @@ public class UserServer {
 	        				message = in.readLine();
 	        				
 	        				/* Send all Events that some other User needs to know about given unblocked */
-	        				user.onEvent(Event.TWEETINT, message, path);
+	        				user.onEvent(Event.TWEETINT, message);
 	        				NP = user.onSend();
 	        				
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
