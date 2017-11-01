@@ -356,7 +356,7 @@ public class User {
 		ArrayList<String> blocked = this.dictionary.get(userName);
 		if (blocked != null) {
 			for (String value : blocked) {
-				if (userName.equals(value)) return true;
+				if (this.getUserName().equals(value)) return true;
 			}
 		}
 		
