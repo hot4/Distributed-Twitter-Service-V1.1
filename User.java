@@ -35,8 +35,8 @@ public class User {
 	/* Container for all Events that occurred that some User does not know about */
 	private TreeSet<Event> PL;
 	/* Container for all Users who blocked some other User */
-	/* Key: User who is blocking */
-	/* Value: Users who are being blocked */
+	/* Key: User who is being blocked */
+	/* Value: User who is blocking key */
 	private Map<String, ArrayList<String>> dictionary;
 	
 	/**
@@ -267,10 +267,15 @@ public class User {
 	/**
 	 * @effects Prints all tweets this User has either created or received
 	 * */
-	public void printTweets() {
-		
+	public void printTweets() {	 	
+		ArrayList<String> blockedView =	null;
 		
 		for (Tweet tweet : this.tweets) {
+			/* Get a list of usernames who blocked this User */
+		 	blockedView = this.dictionary.get(this.getUserName());
+		 	/* Prevent this user from viewing tweet because this user is being blocked */
+			if ((blockedView != null) && (blockedView.contains(tweet.getUserName()))) continue;
+			
 			System.out.println("Tweet:");
 			tweet.printTweet();
 		}
@@ -315,8 +320,8 @@ public class User {
 			} 
 			
 			/* Add new blocked User the dictionary */
-			blockedFrom.add(blocked[1].trim());
-			this.dictionary.put(blockedSelf, blockedFrom);
+			blockedFrom.add(blockedSelf);
+			this.dictionary.put(blocked[1].trim(), blockedFrom);
 		} else if (event.getType().equals(Event.UNBLOCKEDSTR)) {
 			/* Add unblocked information to dictionary */
 			String[] unblocked = event.getMessage().split(Event.UNBLOCKEDSTR);
@@ -325,13 +330,37 @@ public class User {
 			String unblockedSelf = unblocked[0].trim();
 			String unblockedOther = unblocked[1].trim();
 			/* Get all Users's unblockedSelf has blocked from viewing it's tweets */
-			ArrayList<String> blockedFrom = this.dictionary.get(unblockedSelf);
+			ArrayList<String> blockedFrom = this.dictionary.get(unblockedOther);
 			
 			if ((blockedFrom != null) && (blockedFrom.contains(unblockedOther))) {
 				blockedFrom.remove(unblockedOther);
 				this.dictionary.put(unblockedSelf, blockedFrom);
 			}
 		}
+	}
+	
+	/**
+	 * @param userName: Name of some User
+	 * @return True if userName is found within followers of this User, false otherwise or if userName is this User
+	 * */
+	public Boolean userNameExists(String userName) {
+		if (this.getUserName().equals(userName)) return false;
+		return this.portsToSendMsg.containsKey(userName);
+	}
+	
+	/**
+	 * @param userName: Name of some User
+	 * @return True if userName is blocked from viewing this User's tweets, false otherwise
+	 * */
+	public Boolean blockedFromView(String userName) {
+		ArrayList<String> blocked = this.dictionary.get(userName);
+		if (blocked != null) {
+			for (String value : blocked) {
+				if (userName.equals(value)) return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	/**

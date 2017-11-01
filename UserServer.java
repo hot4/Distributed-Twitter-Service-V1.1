@@ -279,7 +279,7 @@ public class UserServer {
 	        					/* Iterate through known ports until current User is found */
 	        					for (Map.Entry<String, Integer> portEntry : user.getPortsToSendMsg().entrySet()) {
 	        						/* Check if given portEntry has the same username as the given NPEntry username */
-	        						if (NPEntry.getKey().equals(portEntry.getKey())) {
+	        						if (NPEntry.getKey().equals(portEntry.getKey()) && !user.blockedFromView(portEntry.getKey())) {
 	        							/* Check if port is available to send data to */
 	        							if(!UserServer.hostAvailabilityCheck(portEntry.getValue())) {
 	        								/* Ignore port since not available */
@@ -311,10 +311,26 @@ public class UserServer {
 	        				}
 	        				break;
 	        			case "Block":
-	        				System.out.println("Block was selected");
+	        				System.out.print("Who do you want to block? [Input a username]");
+	        				userName = in.readLine();
+	        				
+	        				if (user.userNameExists(userName)) {
+	        					/* Send all Events that some other User needs to know about given unblocked */
+		        				user.onEvent(Event.BLOCKINT, user.getUserName() + " " + Event.BLOCKEDSTR + " " + userName);
+	        				} else {
+	        					System.out.println("You cannot block yourself or a nonexistent username");
+	        				}
 	        				break;
 	        			case "Unblock":
-	        				System.out.println("Unblock was seclted");
+	        				System.out.print("Who do you want to unblock? [Input a username]");
+	        				userName = in.readLine();
+	        				
+	        				if (user.userNameExists(userName)) {
+	        					/* Send all Events that some other User needs to know about given unblocked */
+		        				user.onEvent(Event.UNBLOCKINT, user.getUserName() + " " + Event.BLOCKEDSTR + " " + userName);
+	        				} else {
+	        					System.out.println("You cannot unblock yourself or a nonexistent username");
+	        				}
 	        				break;
 	        			case "View":
 	        				user.printTweets();
