@@ -304,37 +304,48 @@ public class User {
 		
 		if (event.getType().equals(Event.TWEETINT)) {
 			/* Create new Tweet and add to tweets */
-
 			this.tweets.add(new Tweet(event));
 		} else if (event.getType().equals(Event.BLOCKINT)) {
 			/* Add blocked information to dictionary */
 			String[] blocked = event.getMessage().split(Event.BLOCKEDSTR);
 			
-			/* Format userName of User who is blocking some other user */
-			String blockedSelf = blocked[0].trim();
-			/* Get all User's blockedSelf has blocked from viewing it's tweets */
-			ArrayList<String> blockedFrom = this.dictionary.get(blockedSelf);
+			/* Format who blocked who */
+			String blockedInitiator = blocked[0].trim();
+			String blockedRecipient = blocked[1].trim();
 			
-			if (blockedFrom == null) {
-				blockedFrom = new ArrayList<String>();
+			/* Add blockedInitiator to blockedRecipient's list of Users who blocked blockedRecipient */
+			ArrayList<String> blockedFromViewing = this.dictionary.get(blockedRecipient);
+			
+			/* Create a container for blockedRecipient since this is the first User blocking */
+			if (blockedFromViewing == null) {
+				blockedFromViewing = new ArrayList<String>();
 			} 
 			
-			/* Add new blocked User the dictionary */
-			blockedFrom.add(blockedSelf);
-			this.dictionary.put(blocked[1].trim(), blockedFrom);
-		} else if (event.getType().equals(Event.UNBLOCKEDSTR)) {
+			/* Add blockedInitiator to container and add to dictionary */
+			blockedFromViewing.add(blockedInitiator);
+			this.dictionary.put(blockedRecipient, blockedFromViewing);
+		} else if (event.getType().equals(Event.UNBLOCKINT)) {
 			/* Add unblocked information to dictionary */
 			String[] unblocked = event.getMessage().split(Event.UNBLOCKEDSTR);
 			
-			/*  Format userName of User who is unblocking some other user */
-			String unblockedSelf = unblocked[0].trim();
-			String unblockedOther = unblocked[1].trim();
-			/* Get all Users's unblockedSelf has blocked from viewing it's tweets */
-			ArrayList<String> blockedFrom = this.dictionary.get(unblockedOther);
+			/* Format who unblocked who */
+			String unblockedInitiator = unblocked[0].trim();
+			String unblockedRecipient = unblocked[1].trim();
 			
-			if ((blockedFrom != null) && (blockedFrom.contains(unblockedOther))) {
-				blockedFrom.remove(unblockedOther);
-				this.dictionary.put(unblockedSelf, blockedFrom);
+			/* Remove blockedInitiator from blockedRecipient's list of Users who blocked blockedRecipient */
+			ArrayList<String> blockedFromViewing = this.dictionary.get(unblockedRecipient);
+			
+			if (blockedFromViewing != null) { 
+				/* Remove unblockedInitiator from unblockedRecipient's container */
+				blockedFromViewing.remove(unblockedInitiator);
+				
+				if (!blockedFromViewing.isEmpty()) {
+					/* Maintain container of Users who blocked unblockedRecipient */
+					this.dictionary.put(unblockedRecipient, blockedFromViewing);
+				} else {
+					/* Remove mapping from dictionary */
+					this.dictionary.remove(unblockedRecipient);
+				}
 			}
 		}
 	}

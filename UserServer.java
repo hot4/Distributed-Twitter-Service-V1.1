@@ -240,7 +240,7 @@ public class UserServer {
 			long startTime = -1;
 			
 			/* Timeout to stop listening for console input or socket activity */
-			Integer timeOut = 5000;
+			Integer timeOut = 1000;
 			
 			/* Create a selector to check activity on port */
 			Selector selector = Selector.open();
@@ -311,7 +311,7 @@ public class UserServer {
 	        				}
 	        				break;
 	        			case "Block":
-	        				System.out.print("Who do you want to block? [Input a username]");
+	        				System.out.print("Who do you want to block? ");
 	        				userName = in.readLine();
 	        				
 	        				if (user.userNameExists(userName)) {
@@ -322,12 +322,12 @@ public class UserServer {
 	        				}
 	        				break;
 	        			case "Unblock":
-	        				System.out.print("Who do you want to unblock? [Input a username]");
+	        				System.out.print("Who do you want to unblock? ");
 	        				userName = in.readLine();
 	        				
 	        				if (user.userNameExists(userName)) {
 	        					/* Send all Events that some other User needs to know about given unblocked */
-		        				user.onEvent(Event.UNBLOCKINT, user.getUserName() + " " + Event.BLOCKEDSTR + " " + userName);
+		        				user.onEvent(Event.UNBLOCKINT, user.getUserName() + " " + Event.UNBLOCKEDSTR + " " + userName);
 	        				} else {
 	        					System.out.println("You cannot unblock yourself or a nonexistent username");
 	        				}
