@@ -97,8 +97,8 @@ public class User {
 	 * @effects Converts each item in NPArr into an Event
 	 * @return A new container of Event objects from NPArr 
 	 * */
-	private TreeSet<Event> stringToNP(String[] NPArr) {
-		TreeSet<Event> NP = new TreeSet<Event>();
+	private ArrayList<Event> stringToNP(String[] NPArr) {
+		ArrayList<Event> NP = new ArrayList<Event>();
 		
 		String[] item = null;
 		/* Iterate through each index of the string array and convert to Event object */
@@ -332,7 +332,7 @@ public class User {
 			String unblockedInitiator = unblocked[0].trim();
 			String unblockedRecipient = unblocked[1].trim();
 			
-			/* Remove blockedInitiator from blockedRecipient's list of Users who blocked blockedRecipient */
+			/* Remove unblockedInitiator from blockedRecipient's list of Users who blocked blockedRecipient */
 			ArrayList<String> blockedFromViewing = this.dictionary.get(unblockedRecipient);
 			
 			if (blockedFromViewing != null) { 
@@ -478,7 +478,7 @@ public class User {
 				/* Check if current User does not know about the current Event */
 				if (!hasRecv(currEvent, recipient)) {
 					/* Add the Event to container for current User to know about */
-					missingKnowledge.add(currEvent);
+					missingKnowledge.add(0, currEvent);
 				}
 			}
 			
@@ -541,7 +541,7 @@ public class User {
 		}
 		
 		/* NP to add to PL */
-		TreeSet<Event> NP = this.stringToNP(NPArr);
+		ArrayList<Event> NP = this.stringToNP(NPArr);
 		
 		/* Add event based on specified type to private fields and write to storage */
 		for (Event event : NP) {
