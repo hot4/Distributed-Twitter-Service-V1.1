@@ -351,12 +351,25 @@ public class User {
 	}
 	
 	/**
-	 * @param userName: Name of some User
-	 * @return True if userName is found within followers of this User, false otherwise or if userName is this User
+	 * @param usernName: Name of user
+	 * @return True if userName is a valid User, false otherwise
 	 * */
 	public Boolean userNameExists(String userName) {
-		if (this.getUserName().equals(userName)) return false;
-		return this.portsToSendMsg.containsKey(userName);
+		return this.getPortsToSendMsg().containsKey(userName);
+	}
+	
+	/**
+	 * @param userName: Name of User to block
+	 * @return True if userName is being blocked by this User, false otherwise
+	 * */
+	public Boolean blockExists(String userName) {		
+		/* Get container of Users who blocked userName from viewing their tweets */
+		ArrayList<String> blockedFromViewing = this.dictionary.get(userName);
+		if (blockedFromViewing != null) {
+			return blockedFromViewing.contains(this.getUserName());
+		}
+		
+		return false;
 	}
 	
 	/**

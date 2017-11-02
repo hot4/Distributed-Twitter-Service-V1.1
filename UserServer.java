@@ -312,24 +312,24 @@ public class UserServer {
 	        				break;
 	        			case "Block":
 	        				System.out.print("Who do you want to block? ");
-	        				userName = in.readLine();
+	        				userName = in.readLine().trim();
 	        				
-	        				if (user.userNameExists(userName)) {
+	        				if (!user.blockExists(userName) && user.userNameExists(userName)) {
 	        					/* Send all Events that some other User needs to know about given unblocked */
 		        				user.onEvent(Event.BLOCKINT, user.getUserName() + " " + Event.BLOCKEDSTR + " " + userName);
 	        				} else {
-	        					System.out.println("You cannot block yourself or a nonexistent username");
+	        					System.out.println("You cannot block yourself, a nonexistent username, or a username who is already blocked");
 	        				}
 	        				break;
 	        			case "Unblock":
 	        				System.out.print("Who do you want to unblock? ");
-	        				userName = in.readLine();
+	        				userName = in.readLine().trim();
 	        				
-	        				if (user.userNameExists(userName)) {
+	        				if (user.blockExists(userName) && user.userNameExists(userName)) {
 	        					/* Send all Events that some other User needs to know about given unblocked */
 		        				user.onEvent(Event.UNBLOCKINT, user.getUserName() + " " + Event.UNBLOCKEDSTR + " " + userName);
 	        				} else {
-	        					System.out.println("You cannot unblock yourself or a nonexistent username");
+	        					System.out.println("You cannot unblock yourself, a nonexistent username, or a username who is already unbocked");
 	        				}
 	        				break;
 	        			case "View":
