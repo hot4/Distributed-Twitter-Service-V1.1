@@ -17,7 +17,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -45,11 +44,13 @@ public class UserServer {
 	 * @param user: Current user of the simulation
 	 * @effects Creates a master directory in the src directory if none exists
 	 * @effects Creates subdirectory within the master directory if none exists 
+	 * @return Amount of events that have locally occurred for this user
 	 * */
-	public static String createDirectory(User user) {
+	public static Integer createDirectory(User user) {
 		File temp = new File("");
 		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX;
 		File directory = new File(path);
+		Integer amount = 0;
 		
 		/* Check if directory exists */
 		if (!directory.exists()) {
@@ -80,8 +81,8 @@ public class UserServer {
 			/* Check if file exists to re-populate data structures */
 			File file = new File(path + UserServer.DIRREGEX + User.LOGFILE);
 			
-			/* No file exists. Just return the path of the subdirectory */
-			if (!file.exists()) return path;
+			/* No file exists */
+			if (!file.exists()) return amount;
 
 			try {
 				/* Read from file */
@@ -109,7 +110,11 @@ public class UserServer {
 	                /* Create event object before adding new information */
 	                if (info[0].equals("Type") && !eventFields.isEmpty()) {
                 		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)).withZone(DateTimeZone.UTC), eventFields.get(4));
-                		user.addEvent(event);
+                		user.addEventBasedOnType(event);
+                		/* Increment the amount of times this user has generated an event */
+                		if (event.getNode().equals(user.getUserName())) {
+                			amount++;
+                		}
                 		eventFields.clear();
 	                }
 	                
@@ -119,7 +124,11 @@ public class UserServer {
 	            
 	            /* Add last event from file */
         		Event event = new Event(Event.typeStringToInt(eventFields.get(0)), eventFields.get(1), Integer.parseInt(eventFields.get(2)), new DateTime(eventFields.get(3)), eventFields.get(4));
-        		user.addEvent(event);
+        		user.addEventBasedOnType(event);
+        		/* Check if last event was causator */
+        		if (event.getNode().equals(user.getUserName())) {
+        			amount++;
+        		}
 	            
         		/* Close buffered reader */
 				bufferedReader.close();
@@ -133,7 +142,7 @@ public class UserServer {
 			}
 		}
 				
-		return path;
+		return amount;
 	}
 	
 	/**
@@ -213,7 +222,8 @@ public class UserServer {
 		user.follow(allUsers);		
 		
 		/* Create directory */
-		String path = UserServer.createDirectory(user);
+		Integer amount = UserServer.createDirectory(user);
+		user.initAmountOfEvents(amount);
 		
 		try {	
 			/* To get input from console */
@@ -224,13 +234,13 @@ public class UserServer {
 			String NPStr = null;
 			SocketChannel sendSC = null;
 			ByteBuffer buffer = null;
-			Map<String, TreeSet<Event>> NP = new HashMap<String, TreeSet<Event>>();
+			Map<String, ArrayList<Event>> NP = new HashMap<String, ArrayList<Event>>();
 			
 			/* To determine timeout for input from console */
 			long startTime = -1;
 			
 			/* Timeout to stop listening for console input or socket activity */
-			Integer timeOut = 5000;
+			Integer timeOut = 1000;
 			
 			/* Create a selector to check activity on port */
 			Selector selector = Selector.open();
@@ -261,15 +271,15 @@ public class UserServer {
 	        				message = in.readLine();
 	        				
 	        				/* Send all Events that some other User needs to know about given unblocked */
-	        				user.onEvent(Event.TWEETINT, message, path);
+	        				user.onEvent(Event.TWEETINT, message);
 	        				NP = user.onSend();
 	        				
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
-	        				for (Map.Entry<String, TreeSet<Event>> NPEntry : NP.entrySet()) {
+	        				for (Map.Entry<String, ArrayList<Event>> NPEntry : NP.entrySet()) {
 	        					/* Iterate through known ports until current User is found */
 	        					for (Map.Entry<String, Integer> portEntry : user.getPortsToSendMsg().entrySet()) {
 	        						/* Check if given portEntry has the same username as the given NPEntry username */
-	        						if (NPEntry.getKey().equals(portEntry.getKey())) {
+	        						if (NPEntry.getKey().equals(portEntry.getKey()) && !user.blockedFromView(portEntry.getKey())) {
 	        							/* Check if port is available to send data to */
 	        							if(!UserServer.hostAvailabilityCheck(portEntry.getValue())) {
 	        								/* Ignore port since not available */
@@ -301,10 +311,26 @@ public class UserServer {
 	        				}
 	        				break;
 	        			case "Block":
-	        				System.out.println("Block was selected");
+	        				System.out.print("Who do you want to block? ");
+	        				userName = in.readLine().trim();
+	        				
+	        				if (!user.blockExists(userName) && user.userNameExists(userName)) {
+	        					/* Send all Events that some other User needs to know about given unblocked */
+		        				user.onEvent(Event.BLOCKINT, user.getUserName() + " " + Event.BLOCKEDSTR + " " + userName);
+	        				} else {
+	        					System.out.println("You cannot block yourself, a nonexistent username, or a username who is already blocked");
+	        				}
 	        				break;
 	        			case "Unblock":
-	        				System.out.println("Unblock was seclted");
+	        				System.out.print("Who do you want to unblock? ");
+	        				userName = in.readLine().trim();
+	        				
+	        				if (user.blockExists(userName) && user.userNameExists(userName)) {
+	        					/* Send all Events that some other User needs to know about given unblocked */
+		        				user.onEvent(Event.UNBLOCKINT, user.getUserName() + " " + Event.UNBLOCKEDSTR + " " + userName);
+	        				} else {
+	        					System.out.println("You cannot unblock yourself, a nonexistent username, or a username who is already unbocked");
+	        				}
 	        				break;
 	        			case "View":
 	        				user.printTweets();

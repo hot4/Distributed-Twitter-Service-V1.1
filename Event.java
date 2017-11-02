@@ -16,6 +16,9 @@ public class Event implements Comparable<Event> {
 	public static Integer UNBLOCKINT = 3;
 	public static String UNBLOCKSTR = "Unblock";
 	
+	public static String BLOCKEDSTR = "blocked";
+	public static String UNBLOCKEDSTR = "unblocked";
+	
 	/* Delimiter for Event encapsulation */
 	public static String EVENTDELIIMITER = ",";
 	public static String FIELDDELIMITER = "|";
@@ -84,6 +87,7 @@ public class Event implements Comparable<Event> {
 	}
 	
 	/**
+	 * @param userName: Current User of application
 	 * @param event: Event object to write to file
 	 * @effects Appends event information to file
 	 * */
@@ -152,7 +156,7 @@ public class Event implements Comparable<Event> {
 		return new String("Type" + Event.FIELDDELIMITER + Event.typeIntToString(this.getType()) + 
 						  "\n\tNode" + Event.FIELDDELIMITER + this.getNode() + 
 						  "\n\tcI" + Event.FIELDDELIMITER + this.getcI() + 
-						  "\n\tTime" + Event.FIELDDELIMITER + this.getdtUTC() + 
+						  "\n\tTime" + Event.FIELDDELIMITER + this.getdtUTC().withZone(DateTimeZone.UTC) + 
 						  "\n\tMessage" + Event.FIELDDELIMITER + this.getMessage() + "\n\n");
 	}
 	
@@ -167,6 +171,14 @@ public class Event implements Comparable<Event> {
 		System.out.println("\tMessage: " + this.message);
 		System.out.println("\tTime: " + this.getdtUTC().withZone(DateTimeZone.getDefault()).toString("EEEE, MMM d 'at' hh:mma"));
 		System.out.println("");
+	}
+	
+	public Boolean equals(Event obj2) {
+		return this.type.equals(obj2.getType()) && 
+			   this.node.equals(obj2.getNode()) && 
+			   this.cI.equals(obj2.getcI()) &&
+			   this.message.equals(obj2.getMessage()) &&
+			   this.dtUTC.withZone(DateTimeZone.UTC).equals(obj2.getdtUTC().withZone(DateTimeZone.UTC));
 	}
 	
 	/**
