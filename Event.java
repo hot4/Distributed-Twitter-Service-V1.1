@@ -1,3 +1,5 @@
+
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -93,7 +95,7 @@ public class Event implements Comparable<Event> {
 	 * */
 	public static void writeEventToFile(String userName, Event event) {
 		File temp = new File("");
-		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX + userName + UserServer.DIRREGEX;;
+		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + userName + UserServer.DIRREGEX;;
 		File file = new File(path + UserServer.DIRREGEX + User.LOGFILE);
 		
 		try {
