@@ -1,3 +1,5 @@
+
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -42,36 +44,21 @@ public class UserServer {
 	
 	/**
 	 * @param user: Current user of the simulation
-	 * @effects Creates a master directory in the src directory if none exists
-	 * @effects Creates subdirectory within the master directory if none exists 
+	 * @effects Creates a directory in the current path for given userName
 	 * @return Amount of events that have locally occurred for this user
 	 * */
 	public static Integer createDirectory(User user) {
 		File temp = new File("");
-		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + UserServer.DIRECTORY + UserServer.DIRREGEX;
-		File directory = new File(path);
+			
+		String path = temp.getAbsolutePath() + UserServer.DIRREGEX + user.getUserName();
+		File dir = new File(path);
 		Integer amount = 0;
 		
-		/* Check if directory exists */
-		if (!directory.exists()) {
+		/* Check if userName directory exists */
+		if(!dir.exists()) {
 			try {
-				/* Create master directory */
-				directory.mkdir();
-			} catch (SecurityException e) {
-				System.err.println("ERROR: Could not make root directory.");
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		
-		path = path + user.getUserName() + UserServer.DIRREGEX;
-		File subdir = new File(path);
-		
-		/* Check if subdirectory exists */
-		if(!subdir.exists()) {
-			try {
-				/* Create subdirectory */
-				subdir.mkdir();
+				/* Create directory */
+				dir.mkdir();
 			} catch (SecurityException e) {
 				System.err.println("ERROR: Could not make subdirectory.");
 				e.printStackTrace();
@@ -174,8 +161,8 @@ public class UserServer {
 		User user = null;
 		
 		try {
-			/* Read file from src folder */
-			in = new BufferedReader(new FileReader(currentPath + UserServer.DIRREGEX + UserServer.SOURCE + UserServer.DIRREGEX + fileName));
+			/* Read file from current path */
+			in = new BufferedReader(new FileReader(currentPath + UserServer.DIRREGEX + fileName));
 			/* Parse file to get User information */
 			while ((line = in.readLine()) != null) {
 				/* Remove white spaces and split based on comma separator */
