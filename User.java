@@ -22,12 +22,14 @@ public class User {
 	
 	/* Identifier for this User */
 	private String userName;
+	/* IP this User is running on */
+	private String IP;
 	/* Port number this User is listening on */
 	private Integer portNumber;
 	/* Local event counter */
 	private Integer cI;
 	/* Port numbers of other Users that they are listening on */
-	private Map<String, Integer> portsToSendMsg;
+	private Map<String, Pair<String, Integer>> portsToSendMsg;
 	/* Matrix to represent direct and indirect knowledge */
 	/* Key: User where direct knowledge is only for the key who matches this User's username */
 	/* Value: Knowledge about other User's */
@@ -45,15 +47,16 @@ public class User {
 	 * @param userName: Identifier for this User
 	 * @param portNumber: Socket port number for this User to listen on
 	 * @effects Assigns parameters to private field
-	 * @modifies userName, portNumber, cI, matrixTi, portsToSendMsg, tweets, PL, Dictionary private fields
+	 * @modifies userName, IP, portNumber, cI, matrixTi, portsToSendMsg, tweets, PL, Dictionary private fields
 	 * @return A new User object
 	 * */
-	public User(String userName, Integer portNumber) {
+	public User(String userName, String IP, Integer portNumber) {
 		this.userName = userName;
+		this.IP = IP;
 		this.portNumber = portNumber;
 		this.cI = 0;
 		this.matrixTi = new HashMap<String, ArrayList<Pair<String, Integer>>>();
-		this.portsToSendMsg = new HashMap<String, Integer>();
+		this.portsToSendMsg = new HashMap<String, Pair<String, Integer>>();
 		this.tweets = new TreeSet<Tweet>();
 		this.PL = new TreeSet<Event>();
 		this.dictionary = new HashMap<String, ArrayList<String>>();
@@ -118,22 +121,29 @@ public class User {
 	 * @return A copy of userName private field
 	 * */
 	public String getUserName() { 
-		return new String(userName); 
+		return new String(this.userName); 
+	}
+	
+	/**
+	 * @return A copy of IP private field
+	 * */
+	public String getIP() {
+		return new String(this.IP);
 	}
 	
 	/**
 	 * @return A copy of portNumber private field
 	 * */
 	public Integer getPortNumber() {
-		return new Integer(portNumber);
+		return new Integer(this.portNumber);
 	}
 	
 	/**
 	 * @return A copy of portsToSendMsg private field
 	 * */
-	public Map<String, Integer> getPortsToSendMsg() {
-		Map<String, Integer> copy = new HashMap<String, Integer>();
-		for (Map.Entry<String, Integer> entry : this.portsToSendMsg.entrySet()) {
+	public Map<String, Pair<String, Integer>> getPortsToSendMsg() {
+		Map<String, Pair<String, Integer>> copy = new HashMap<String, Pair<String, Integer>>();
+		for (Map.Entry<String, Pair<String, Integer>> entry : this.portsToSendMsg.entrySet()) {
 			copy.put(entry.getKey(), entry.getValue());
 		}
 		return copy;
@@ -151,9 +161,9 @@ public class User {
 	}
 	
 	/**
-	 * @param allUsers: A list of (username, port number)
+	 * @param allUsers: A list of (username, IP, port number)
 	 * @effects Generates NxN matrix for this Users where N represents the amount of users
-	 * @effects Adds username and port number for all users in the list that are not this User's username
+	 * @effects Adds username and (IP, port number) for all users in the list that are not this User's username
 	 * @modifies matrixTi and portsToSendMsg private fields
 	 * */
 	public void follow(List<String[]> allUsers) {
@@ -165,7 +175,7 @@ public class User {
 			this.matrixTi.put(allUsers.get(i)[0], columns);
 			
 			if (!allUsers.get(i)[0].equals(this.getUserName())) {
-				this.portsToSendMsg.put(allUsers.get(i)[0], Integer.parseInt(allUsers.get(i)[1]));
+				this.portsToSendMsg.put(allUsers.get(i)[0], Pair.createPair(allUsers.get(i)[1], Integer.parseInt(allUsers.get(i)[2])));
 			}
 		}
 	}
