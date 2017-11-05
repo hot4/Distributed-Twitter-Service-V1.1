@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -28,7 +29,7 @@ public class UserServer {
 	public static String DELIMITER = "&";
 	
 	/* Directory names path delimiter */
-	public static String DIRREGEX = "\\";
+	public static String DIRREGEX = "/";
 	public static String SOURCE = "src";
 	public static String DIRECTORY = "storage";
 	
@@ -133,12 +134,13 @@ public class UserServer {
 	}
 	
 	/**
+	 * @param IP: IP to have server connect to
 	 * @param port: Port to have server connect to
 	 * @effects Checks if connection is available
 	 * @return true if socket is able to connect to port, false otherwise 
 	 * */
-	public static boolean hostAvailabilityCheck(Integer port) { 
-	    try (Socket s = new Socket("localhost", port)) {
+	public static boolean hostAvailabilityCheck(String IP, Integer port) { 
+	    try (Socket s = new Socket(InetAddress.getByName(IP), port)) {
 	    	s.close();
 	        return true;
 	    } catch (IOException ex) {
@@ -160,18 +162,18 @@ public class UserServer {
 		
 		User user = null;
 		
-		try {
+		try {	
 			/* Read file from current path */
 			in = new BufferedReader(new FileReader(currentPath + UserServer.DIRREGEX + fileName));
 			/* Parse file to get User information */
 			while ((line = in.readLine()) != null) {
 				/* Remove white spaces and split based on comma separator */
-				userInfo = line.replace(" ", "").substring(1, line.length()-2).split(",");
+				userInfo = line.replace(" ", "").replace("\"", "").split(",");
 				
 				/* Gather all information from file */
 				if (userInfo[0].equals(userName)) {
 					/* Create User object based on command argument */
-					user = new User(userInfo[0], Integer.parseInt(userInfo[1]));
+					user = new User(userInfo[0], userInfo[1], Integer.parseInt(userInfo[2]));
 				}
 				/* Store all user information */
 				allUsers.add(userInfo);
@@ -234,7 +236,7 @@ public class UserServer {
 			
 			/* Create a listen socket on the given port */
 	        ServerSocketChannel serverSocket = ServerSocketChannel.open();
-	        serverSocket.bind(new InetSocketAddress("localhost", user.getPortNumber()));
+	        serverSocket.bind(new InetSocketAddress(InetAddress.getByName(user.getIP()), user.getPortNumber()));
 	        serverSocket.configureBlocking(false);
 	        serverSocket.register(selector, SelectionKey.OP_ACCEPT);
 	        
@@ -264,17 +266,17 @@ public class UserServer {
 	        				/* Iterate through NP to see what messages need to be sent to other User(s) */
 	        				for (Map.Entry<String, ArrayList<Event>> NPEntry : NP.entrySet()) {
 	        					/* Iterate through known ports until current User is found */
-	        					for (Map.Entry<String, Integer> portEntry : user.getPortsToSendMsg().entrySet()) {
+	        					for (Map.Entry<String, Pair<String, Integer>> portEntry : user.getPortsToSendMsg().entrySet()) {
 	        						/* Check if given portEntry has the same username as the given NPEntry username */
 	        						if (NPEntry.getKey().equals(portEntry.getKey()) && !user.blockedFromView(portEntry.getKey())) {
 	        							/* Check if port is available to send data to */
-	        							if(!UserServer.hostAvailabilityCheck(portEntry.getValue())) {
+	        							if(!UserServer.hostAvailabilityCheck(portEntry.getValue().getKey(), portEntry.getValue().getValue())) {
 	        								/* Ignore port since not available */
 	        								continue;
 	        							}
 	        							
 	        							/* Open socket to current User */
-	        							sendSC = SocketChannel.open(new InetSocketAddress("localhost", portEntry.getValue()));
+	        							sendSC = SocketChannel.open(new InetSocketAddress(portEntry.getValue().getKey(), portEntry.getValue().getValue()));
 	        							
 	        							/* Convert this User's matrixTi to a string */
 	        							matrixTiStr = user.matrixTiToString();
